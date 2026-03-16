@@ -1,0 +1,1150 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -64
+      ],
+      "id": "d0208799-d153-4676-b2d2-80f1e97f75d7",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "T4G7TMZAMtZspx61",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const parseTestCaseReportsStr = `\nfunction parseTestCaseReports(testCaseOutput) {\n  try {\n    if (!testCaseOutput || typeof testCaseOutput !== 'string') {\n      console.error(\"Invalid testCaseOutput:\", testCaseOutput);\n      return [];\n    }\n\n    console.log(\"testCaseOutput:\", testCaseOutput);\n\n    const reportMatch = testCaseOutput.match(/report=(\\\\[.*\\\\])/);\n    if (reportMatch && reportMatch[1]) {\n      const reportStr = reportMatch[1];\n      const reports = JSON.parse(reportStr);\n      console.log(\"Parsed test reports:\", reports);\n      return reports;\n    }\n\n    console.warn(\"No report array found in testCaseOutput\");\n    return [];\n  } catch (e) {\n    console.error(\"Error parsing test case reports:\", e);\n    console.error(\"testCaseOutput received:\", testCaseOutput);\n\n    try {\n      const reportIndex = testCaseOutput.lastIndexOf('report=');\n      if (reportIndex !== -1) {\n        const jsonStr = testCaseOutput.substring(reportIndex + 7).trim();\n        const reports = JSON.parse(jsonStr);\n        console.log(\"Successfully parsed using alternative method\");\n        return reports;\n      }\n    } catch (e2) {\n      console.error(\"Alternative parsing also failed:\", e2);\n    }\n\n    return [];\n  }\n}\n`;\n\n\nconst sampleQuestionFormat = `\n{\n  \"id\": 100,\n  \"title\": \"Sum of Two Numbers\",\n  \"description\": \"<!-- LeetCode-style HTML -->\\n<div style=\\\"font-family: Inter, ui-sans-serif, system-ui; line-height:1.75; max-width:820px;\\\">\\n\\n  <p style=\\\"\\n    margin:0.25rem 0 1.5rem 0;\\n    font-size:1rem;\\n    font-weight:600;\\n    letter-spacing:0.02em;\\n  \\\">\\n    Easy · Math · Basic Programming\\n  </p>\\n\\n  <section>\\n\\n    <h2 style=\\\"margin-bottom:0.75rem;\\\">Problem</h2>\\n\\n    <p style=\\\"margin-bottom:0.75rem;\\\">\\n      Given two integers <strong>a</strong> and <strong>b</strong>, \\n      return their <strong>sum</strong>.\\n    </p>\\n\\n    <h3 style=\\\"margin-top:1.75rem;\\\">Input</h3>\\n    <p style=\\\"margin-bottom:1rem;\\\">\\n      Two integers <code>a</code> and <code>b</code>.\\n    </p>\\n\\n    <h3 style=\\\"margin-top:1.75rem;\\\">Output</h3>\\n    <p style=\\\"margin-bottom:1rem;\\\">\\n      Return a single integer representing the sum of <code>a</code> and <code>b</code>.\\n    </p>\\n\\n    <h3 style=\\\"margin-top:1.75rem;\\\">Constraints</h3>\\n    <ul style=\\\"margin-left:1.25rem; margin-bottom:1.25rem;\\\">\\n      <li>-10<sup>9</sup> ≤ a, b ≤ 10<sup>9</sup></li>\\n      <li>Time limit: 1000ms</li>\\n    </ul>\\n\\n    <h3 style=\\\"margin-top:1.75rem;\\\">Examples</h3>\\n\\n    <div style=\\\"padding:14px 16px; border-radius:10px; margin-top:1rem;\\\">\\n      <strong>Example 1</strong>\\n      <pre style=\\\"margin-top:0.75rem;\\\">Input:  a = 5, b = 3\\nOutput: 8</pre>\\n    </div>\\n\\n    <div style=\\\"padding:14px 16px; border-radius:10px; margin-top:1.25rem;\\\">\\n      <strong>Example 2</strong>\\n      <pre style=\\\"margin-top:0.75rem;\\\">Input:  a = -10, b = 20\\nOutput: 10</pre>\\n    </div>\\n\\n    <h3 style=\\\"margin-top:2rem;\\\">Time & Space Complexity</h3>\\n    <ul style=\\\"margin-left:1.25rem;\\\">\\n      <li><strong>Time:</strong> O(1)</li>\\n      <li><strong>Space:</strong> O(1)</li>\\n    </ul>\\n\\n    <h3 style=\\\"margin-top:2rem;\\\">Note</h3>\\n    <p style=\\\"margin-bottom:0;\\\">\\n      Return the computed result from the function (do not print it).\\n    </p>\\n\\n  </section>\\n</div>\\n\",\n  \"difficulty\": \"easy\",\n  \"languages\": [\n    {\n      \"language\": \"C\",\n      \"starterCodes\": \"#include <stdio.h>\\n#include \\\"main.h\\\"\\n\\nint sum(int a, int b) {\\n    // implement logic\\n    return 0;\\n}\\n\\nint main() {\\n    printf(\\\"Example 1 — expected=8 actual=%d\\\\n\\\", sum(5, 3));\\n    printf(\\\"Example 2 — expected=10 actual=%d\\\\n\\\", sum(-10, 20));\\n    return 0;\\n}\\n\",\n      \"additionalFiles\": [\n        {\n          \"fileName\": \"main.h\",\n          \"code\": \"#ifndef MAIN_H\\n#define MAIN_H\\nint sum(int a, int b);\\n#endif\\n\"\n        },\n        {\n          \"fileName\": \"tester.c\",\n          \"code\": \"#include <stdio.h>\\n#include \\\"main.h\\\"\\n\\nstruct TestCase { int a; int b; int expected; };\\n\\nint main() {\\n    struct TestCase tests[] = {\\n        {5, 3, 8},\\n        {-10, 20, 10},\\n        {0, 0, 0},\\n        {100, -50, 50},\\n        {-25, -25, -50},\\n        {1000000, 1000000, 2000000}\\n    };\\n\\n    int numTests = sizeof(tests) / sizeof(tests[0]);\\n    int passed = 0;\\n    char report[2048] = \\\"[\\\";\\n\\n    for (int i = 0; i < numTests; i++) {\\n        int actual = sum(tests[i].a, tests[i].b);\\n        int ok = (actual == tests[i].expected);\\n\\n        char inputStr[128];\\n        sprintf(inputStr, \\\"{a:%d,b:%d}\\\", tests[i].a, tests[i].b);\\n\\n        char entry[256];\\n        sprintf(entry,\\n            \\\"{\\\\\\\"input\\\\\\\":\\\\\\\"%s\\\\\\\",\\\\\\\"expected\\\\\\\":\\\\\\\"%d\\\\\\\",\\\\\\\"actual\\\\\\\":\\\\\\\"%d\\\\\\\",\\\\\\\"passed\\\\\\\":%s},\\\",\\n            inputStr, tests[i].expected, actual, ok ? \\\"true\\\" : \\\"false\\\");\\n\\n        strcat(report, entry);\\n        if (ok) passed++;\\n    }\\n\\n    if (report[strlen(report) - 1] == ',') report[strlen(report) - 1] = ']';\\n\\n    printf(\\\"passed=%d\\\\n\\\", passed);\\n    printf(\\\"total=%d\\\\n\\\", numTests);\\n    printf(\\\"report=%s\\\\n\\\", report);\\n    return 0;\\n}\\n\"\n        }\n      ],\n      \"testCases\": [\n        { \"input\": \"{\\\"a\\\":5,\\\"b\\\":3}\", \"expected\": \"8\" },\n        { \"input\": \"{\\\"a\\\":-10,\\\"b\\\":20}\", \"expected\": \"10\" },\n        { \"input\": \"{\\\"a\\\":0,\\\"b\\\":0}\", \"expected\": \"0\" },\n        { \"input\": \"{\\\"a\\\":100,\\\"b\\\":-50}\", \"expected\": \"50\" },\n        { \"input\": \"{\\\"a\\\":-25,\\\"b\\\":-25}\", \"expected\": \"-50\" },\n        { \"input\": \"{\\\"a\\\":1000000,\\\"b\\\":1000000}\", \"expected\": \"2000000\" }\n      ]\n    },\n    {\n      \"language\": \"JAVA\",\n      \"starterCodes\": \"public class Solution {\\n    public static int sum(int a, int b) {\\n        // implement logic\\n        return 0;\\n    }\\n\\n    public static void main(String[] args) {\\n        System.out.println(\\\"Example 1 — expected=8 actual=\\\" + sum(5, 3));\\n        System.out.println(\\\"Example 2 — expected=10 actual=\\\" + sum(-10, 20));\\n    }\\n}\\n\",\n      \"testCases\": [\n        { \"input\": \"{\\\"a\\\":5,\\\"b\\\":3}\", \"expected\": \"8\" },\n        { \"input\": \"{\\\"a\\\":-10,\\\"b\\\":20}\", \"expected\": \"10\" },\n        { \"input\": \"{\\\"a\\\":0,\\\"b\\\":0}\", \"expected\": \"0\" },\n        { \"input\": \"{\\\"a\\\":100,\\\"b\\\":-50}\", \"expected\": \"50\" },\n        { \"input\": \"{\\\"a\\\":-25,\\\"b\\\":-25}\", \"expected\": \"-50\" },\n        { \"input\": \"{\\\"a\\\":1000000,\\\"b\\\":1000000}\", \"expected\": \"2000000\" }\n      ]\n    },\n    {\n      \"language\": \"PYTHON\",\n      \"starterCodes\": \"def sum(a, b):\\n    # implement logic\\n    return 0\\n\\nif __name__ == '__main__':\\n    print('Example 1 — expected=8 actual=', sum(5, 3))\\n    print('Example 2 — expected=10 actual=', sum(-10, 20))\\n\",\n      \"testCases\": [\n        { \"input\": \"{\\\"a\\\":5,\\\"b\\\":3}\", \"expected\": \"8\" },\n        { \"input\": \"{\\\"a\\\":-10,\\\"b\\\":20}\", \"expected\": \"10\" },\n        { \"input\": \"{\\\"a\\\":0,\\\"b\\\":0}\", \"expected\": \"0\" },\n        { \"input\": \"{\\\"a\\\":100,\\\"b\\\":-50}\", \"expected\": \"50\" },\n        { \"input\": \"{\\\"a\\\":-25,\\\"b\\\":-25}\", \"expected\": \"-50\" },\n        { \"input\": \"{\\\"a\\\":1000000,\\\"b\\\":1000000}\", \"expected\": \"2000000\" }\n      ]\n    }\n  ]\n}\n\n`\n\nreturn {\n  question: $input.first().json.body.question,\n  questionDescription : $input.first().json.body.questionDescription,\n  difficulty : $input.first().json.body.difficulty,\n  languages : $input.first().json.body.languages,\n  testCases : $input.first().json.body.testCases,\n  parseTestCaseReportsStr : parseTestCaseReportsStr,\n  sampleQuestionFormat : sampleQuestionFormat\n  \n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1232,
+        -160
+      ],
+      "id": "2b927f68-911c-45fb-ba26-ee713f2afeff",
+      "name": "get parseTestCaseStr"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a coding problem generator for an online judge platform.\n\n## INPUT YOU WILL RECEIVE\n\nQuestion title: {{$('get parseTestCaseStr').first().json.question}}\nDetailed problem description: {{ $('get parseTestCaseStr').first().json.questionDescription}}\nDifficulty level: {{ $('get parseTestCaseStr').first().json.difficulty }}\nTestCases : {{ $('get parseTestCaseStr').first().json.testCases }}\nRequired Languages: {{ $('get parseTestCaseStr').first().json.languages }}\n\n---\n\n## OUTPUT RULES\n\nOutput ONLY valid JSON. NO markdown. NO explanations. NO extra text.\n\n---\n\n## JSON SCHEMA (DO NOT MODIFY)\n\n```json\n{\n  \"id\": <number>,\n  \"title\": \"<string>\",\n  \"description\": \"<HTML_string>\",\n  \"difficulty\": \"<easy|medium|hard>\",\n  \"languages\": [\n    {\n      \"language\": \"<language_name>\",\n      \"starterCodes\": \"<string>\",\n      \"additionalFiles\": [\n        { \"fileName\": \"<string>\", \"code\": \"<string>\" }\n      ],\n      \"testCases\": [\n        { \"input\": \"<stringified_JSON>\", \"expected\": \"<string>\" }\n      ]\n    }\n  ]\n}\n```\n\n---\n\n## STEP 1: ANALYZE THE PROBLEM\n\nFrom the problem description, determine: function name, input parameters (names, types, count), return type, and edge cases to test.\n\n---\n\n## STEP 2: USE PROVIDED TEST CASES\n\nDo NOT generate test cases. Use ONLY the test cases provided in the TestCases input field.\n- Map them directly into the `testCases` array for each language.\n- Keep the `input` and `expected` values exactly as provided.\n- Use proper JSON format with escaped quotes in the testCases array: `{\"key\":value}`\n- These same test cases must also be used inside the tester files.\n\n**TEST CASES FORMAT (for testCases array):**\n\n```\n{ \"input\": \"{\\\"param1\\\":value1,\\\"param2\\\":value2}\", \"expected\": \"result\" }\n```\n\nUse proper JSON with escaped quotes. NO spaces after colons or commas.\n\nExamples:\n- CORRECT: `{\"a\":5,\"b\":3}`\n- CORRECT: `{\"arr\":[1,2,3],\"n\":3}`\n- WRONG: `{\"a\": 5, \"b\": 3}`\n\n---\n\n## STEP 3: GENERATE STARTER CODE\n\n**JAVA** — Everything in ONE public class Solution:\n\n```java\npublic class Solution {\n    public static <returnType> <functionName>(<params>) {\n        // implement logic\n        return <placeholder>;\n    }\n    public static void main(String[] args) {\n        System.out.println(\"Example 1 — expected=<exp1> actual=\" + <functionName>(<args1>));\n        System.out.println(\"Example 2 — expected=<exp2> actual=\" + <functionName>(<args2>));\n    }\n}\n```\n\n**PYTHON:**\n\n```python\ndef <function_name>(<params>):\n    # implement logic\n    return <placeholder>\n\nif __name__ == '__main__':\n    print('Example 1 — expected=<exp1> actual=', <function_name>(<args1>))\n    print('Example 2 — expected=<exp2> actual=', <function_name>(<args2>))\n```\n\n**C:**\n\n```c\n#include <stdio.h>\n#include \"main.h\"\n\n<returnType> <function_name>(<params>) {\n    // implement logic\n    return <placeholder>;\n}\n\nint main() {\n    <variables_for_test1>\n    printf(\"Example 1 — expected=<exp1> actual=<format>\\n\", <exp1>, <function_call1>);\n    <variables_for_test2>\n    printf(\"Example 2 — expected=<exp2> actual=<format>\\n\", <exp2>, <function_call2>);\n    return 0;\n}\n```\n\n**JAVASCRIPT:**\n\n```javascript\nfunction <functionName>(<params>) {\n    // implement logic\n    return <placeholder>;\n}\nconsole.log('Example 1 — expected=<exp1> actual=' + <functionName>(<args1>));\nconsole.log('Example 2 — expected=<exp2> actual=' + <functionName>(<args2>));\nmodule.exports = { <functionName> };\n```\n\n**TYPESCRIPT:**\n\n```typescript\nfunction <functionName>(<params_with_types>): <returnType> {\n    // implement logic\n    return <placeholder>;\n}\nconsole.log('Example 1 — expected=<exp1> actual=' + <functionName>(<args1>));\nconsole.log('Example 2 — expected=<exp2> actual=' + <functionName>(<args2>));\nexport { <functionName> };\n```\n\n**C#:**\n\n```csharp\nusing System;\npublic class Solution {\n    public static <ReturnType> <FunctionName>(<params>) {\n        // implement logic\n        return <placeholder>;\n    }\n    public static void Main(string[] args) {\n        Console.WriteLine(\"Example 1 — expected=<exp1> actual=\" + <FunctionName>(<args1>));\n        Console.WriteLine(\"Example 2 — expected=<exp2> actual=\" + <FunctionName>(<args2>));\n    }\n}\n```\n\n**GO:**\n\n```go\npackage main\nimport \"fmt\"\nfunc <functionName>(<params>) <returnType> {\n    // implement logic\n    return <placeholder>\n}\nfunc main() {\n    fmt.Printf(\"Example 1 — expected=<exp1> actual=%v\\n\", <functionName>(<args1>))\n    fmt.Printf(\"Example 2 — expected=<exp2> actual=%v\\n\", <functionName>(<args2>))\n}\n```\n\n---\n\n## STEP 4: GENERATE ADDITIONAL FILES\n\n**C/C++ Header File:**\nfileName: `main.h`\n\n```c\n#ifndef MAIN_H\n#define MAIN_H\n<returnType> <function_name>(<param_types>);\n#endif\n```\n\n---\n\n## TESTER FILES (CRITICAL)\n\nFilenames: C=`tester.c`, Java=`Tester.java`, Python=`tester.py`, JavaScript=`tester.js`, TypeScript=`tester.ts`, C#=`Tester.cs`, Go=`tester_test.go`\n\n---\n\n### TESTER INPUT STRING FORMAT (MOST IMPORTANT)\n\nWhen building the input string for the JSON report, you MUST use SIMPLIFIED format WITHOUT quotes around keys to avoid JSON parsing errors.\n\n**CORRECT TESTER INPUT FORMATS:**\n- Simple params: `{a:5,b:3}`\n- With arrays: `{arr:[1,2,3],n:3}`\n- Multiple params: `{x:10,y:20,z:30}`\n\n**WRONG FORMATS (will break JSON parsing):**\n- `{\"a\":5,\"b\":3}` — quotes around keys will cause parse errors\n- `{\"arr\":[1,2,3],\"n\":3}` — quotes around keys will cause parse errors\n\n---\n\n### TESTER DATA SOURCE RULE\n\nAll tester files must use ONLY the test cases from the provided TestCases input. Do NOT invent or add extra test cases in the tester files. Parse the provided TestCases to extract input values and expected values, then hardcode them into the tester structs/arrays.\n\n---\n\n### C TESTER TEMPLATE\n\n```c\n#include <stdio.h>\n#include <string.h>\n#include \"main.h\"\n\nstruct TestCase {\n    <field1_type> <field1_name>;\n    <field2_type> <field2_name>;\n    int expected;\n};\n\nint main() {\n    struct TestCase tests[] = {\n        {<val1>, <val2>, <expected1>},   // from provided TestCase 1\n        {<val1>, <val2>, <expected2>},   // from provided TestCase 2\n        // ... all provided test cases\n    };\n\n    int numTests = sizeof(tests) / sizeof(tests[0]);\n    int passed = 0;\n    char report[2048] = \"[\";\n\n    for (int i = 0; i < numTests; i++) {\n        int actual = <functionName>(tests[i].<field1>, tests[i].<field2>);\n        int ok = (actual == tests[i].expected);\n\n        char inputStr[128];\n        sprintf(inputStr, \"{<key1>:%<format1>,<key2>:%<format2>}\", tests[i].<field1>, tests[i].<field2>);\n\n        char entry[256];\n        sprintf(entry,\n            \"{\\\"input\\\":\\\"%s\\\",\\\"expected\\\":\\\"%d\\\",\\\"actual\\\":\\\"%d\\\",\\\"passed\\\":%s},\",\n            inputStr, tests[i].expected, actual, ok ? \"true\" : \"false\");\n\n        strcat(report, entry);\n        if (ok) passed++;\n    }\n\n    if (report[strlen(report) - 1] == ',') report[strlen(report) - 1] = ']';\n\n    printf(\"passed=%d\\n\", passed);\n    printf(\"total=%d\\n\", numTests);\n    printf(\"report=%s\\n\", report);\n    return 0;\n}\n```\n\n**EXAMPLE C TESTER FOR sum(a, b):**\n```c\nsprintf(inputStr, \"{a:%d,b:%d}\", tests[i].a, tests[i].b);\n// Produces: {a:5,b:3} — Valid in JSON report\n```\n\n**EXAMPLE C TESTER FOR function with array:**\n```c\n// Convert array to string without brackets first, then:\nsprintf(inputStr, \"{arr:[%s],n:%d}\", arrayString, tests[i].n);\n// Produces: {arr:[1,2,3],n:3} — Valid in JSON report\n```\n\n---\n\n### JAVA TESTER TEMPLATE\n\n```java\npublic class Tester {\n    public static void main(String[] args) {\n        Object[][] tests = {\n            {<val1>, <val2>, <expected>},   // from provided TestCase 1\n            // ... all provided test cases\n        };\n\n        int passed = 0;\n        StringBuilder report = new StringBuilder(\"[\");\n\n        for (int i = 0; i < tests.length; i++) {\n            <type1> <var1> = (<type1>) tests[i][0];\n            <type2> <var2> = (<type2>) tests[i][1];\n            int expected = (int) tests[i][2];\n\n            int actual = Solution.<functionName>(<var1>, <var2>);\n            boolean ok = actual == expected;\n\n            String inputStr = String.format(\"{<key1>:%s,<key2>:%s}\", <var1>, <var2>);\n\n            report.append(String.format(\n                \"{\\\"input\\\":\\\"%s\\\",\\\"expected\\\":\\\"%d\\\",\\\"actual\\\":\\\"%d\\\",\\\"passed\\\":%s},\",\n                inputStr, expected, actual, ok ? \"true\" : \"false\"));\n\n            if (ok) passed++;\n        }\n\n        if (report.charAt(report.length() - 1) == ',')\n            report.setCharAt(report.length() - 1, ']');\n\n        System.out.println(\"passed=\" + passed);\n        System.out.println(\"total=\" + tests.length);\n        System.out.println(\"report=\" + report.toString());\n    }\n}\n```\n\n---\n\n### PYTHON TESTER TEMPLATE\n\n```python\nimport json\nimport solution\n\ntests = [\n    (<val1>, <val2>, <expected>),   # from provided TestCase 1\n    # ... all provided test cases\n]\n\npassed = 0\nreport = []\n\nfor var1, var2, expected in tests:\n    actual = solution.<function_name>(var1, var2)\n    ok = actual == expected\n\n    input_obj = {\n        \"<key1>\": var1,\n        \"<key2>\": var2\n    }\n\n    report.append({\n        \"input\": input_obj,\n        \"expected\": expected,\n        \"actual\": actual,\n        \"passed\": ok\n    })\n\n    if ok:\n        passed += 1\n\nprint(f\"passed={passed}\")\nprint(f\"total={len(tests)}\")\nprint(f\"report={json.dumps(report)}\")\n```\n\n---\n\n### JAVASCRIPT TESTER TEMPLATE\n\n```javascript\nconst { <functionName> } = require('./solution.js');\n\nconst tests = [\n    { <key1>: <val1>, <key2>: <val2>, expected: <exp> },   // from provided TestCase 1\n    // ... all provided test cases\n];\n\nlet passed = 0;\nconst report = [];\n\ntests.forEach(test => {\n    const actual = <functionName>(test.<key1>, test.<key2>);\n    const ok = actual === test.expected;\n\n    const inputStr = `{<key1>:${test.<key1>},<key2>:${test.<key2>}}`;\n\n    report.push({\n        input: inputStr,\n        expected: String(test.expected),\n        actual: String(actual),\n        passed: ok\n    });\n\n    if (ok) passed++;\n});\n\nconsole.log(`passed=${passed}`);\nconsole.log(`total=${tests.length}`);\nconsole.log(`report=${JSON.stringify(report)}`);\n```\n\n---\n\n### TESTER OUTPUT FORMAT\n\n```\npassed=<number>\ntotal=<number>\nreport=[{\"input\":\"...\",\"expected\":\"...\",\"actual\":\"...\",\"passed\":true|false},...]\n```\n\n---\n\n## DESCRIPTION HTML\n\n```html\n<div>\n  <p><strong>Problem</strong></p>\n  <p>Problem statement</p>\n  <p><strong>Input</strong></p>\n  <p>Input format</p>\n  <p><strong>Output</strong></p>\n  <p>Output format</p>\n  <p><strong>Constraints</strong></p>\n  <ul><li>constraint 1</li></ul>\n  <p><strong>Examples</strong></p>\n  <p><strong>Example 1:</strong></p>\n  <pre><code>Input:\\n...\\nOutput: ...\\nExplanation: ...\\n</code></pre>\n  <p><strong>Time & Space Complexity</strong></p>\n  <ul><li>Expected Time Complexity: O(...)</li></ul>\n  <p><strong>Note</strong></p>\n  <p>Additional notes</p>\n</div>\n```\n\n---\n\n## CHECKLIST\n\n- [ ] Unique problem ID\n- [ ] Complete HTML description\n- [ ] starterCodes for all languages\n- [ ] JAVA: ONE public class Solution\n- [ ] StarterCodes show 2 examples (from provided test cases)\n- [ ] main.h for C/C++\n- [ ] Tester files for ALL languages\n- [ ] Tester uses ONLY provided test cases — no invented ones\n- [ ] Tester uses simplified input format: `{key:value}` NOT `{\"key\":value}`\n- [ ] testCases array uses proper JSON: `{\"key\":value}`\n- [ ] Tester report input uses simplified: `{key:value}`\n\n---\n\n## CRITICAL MISTAKES TO AVOID\n\n| ❌ WRONG | ✅ CORRECT |\n|---|---|\n| `sprintf(inputStr, \"{\\\"a\\\":%d,\\\"b\\\":%d}\", a, b)` → produces `{\"a\":5,\"b\":3}` — BREAKS JSON PARSING | `sprintf(inputStr, \"{a:%d,b:%d}\", a, b)` → produces `{a:5,b:3}` — WORKS IN JSON REPORT |\n| Java with separate Main class | Java with ONE public class Solution |\n| Generating new test cases not in the original TestCases input | Using ONLY the test cases provided in the TestCases input field |\n\n---\n\n## FINAL RULE\n\nOutput ONLY the JSON object starting with `{` and ending with `}`. No markdown. No explanations.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1680,
+        -288
+      ],
+      "id": "e0298eab-b0da-47b8-be39-bfef7ea3901b",
+      "name": "Question Generator"
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseGeneratedQuestion(input) {\n  try {\n    let outputStr;\n\n    // Handle different possible shapes\n    if (Array.isArray(input) && input[0]?.output) {\n      outputStr = input[0].output;\n    } else if (typeof input === \"string\") {\n      outputStr = input;\n    } else if (input?.output) {\n      outputStr = input.output;\n    } else {\n      return [{ json: { error: \"Invalid input format\" } }];\n    }\n\n    // Remove markdown wrappers\n    const cleaned = outputStr\n      .replace(/^```json\\s*/i, \"\")\n      .replace(/\\s*```$/i, \"\")\n      .trim();\n\n    // First parse\n    let parsed = JSON.parse(cleaned);\n    let result = parsed;\n\n    // Handle nested \"output\" that contains another JSON string\n    if (parsed && typeof parsed.output === \"string\") {\n      const inner = parsed.output\n        .replace(/^```json\\s*/i, \"\")\n        .replace(/\\s*```$/i, \"\")\n        .trim();\n\n      result = JSON.parse(inner);\n    }\n\n    // n8n requires array of items\n    if (Array.isArray(result)) {\n      return result.map(item => ({ json: item }));\n    }\n\n    return [{ json: result }];\n\n  } catch (e) {\n    return [{ json: { error: e.message } }];\n  }\n}\n\n// IMPORTANT: pass full input JSON\nreturn parseGeneratedQuestion($input.first().json);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2208,
+        -288
+      ],
+      "id": "198f1fb3-82b7-4b2d-b646-82fcaad5dbb8",
+      "name": "JSON Parser"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ce296c8c-1097-4e0e-82f4-6b061db2a180",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        -160
+      ],
+      "id": "729c5e81-5eeb-4717-9be5-f87d3f7b6689",
+      "name": "Webhook",
+      "webhookId": "ce296c8c-1097-4e0e-82f4-6b061db2a180"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3840,
+        -96
+      ],
+      "id": "ce0f0b83-18da-487a-8862-7ef8e3b7afd5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        -96
+      ],
+      "id": "f0bd97c4-6c23-4616-b6c1-2e4745355064",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a JSON validator for coding problem generator output. Your task is to validate generated JSON against strict formatting rules.\n\nINPUT YOU WILL RECEIVE\nGenerated JSON from problem generator\n{{ $json.toJsonString() }}\n\n\nVALIDATION RULES\n\n1. SCHEMA VALIDATION\nRequired top-level fields: id, title, description, difficulty, languages\nEach language object must have: language, starterCodes, additionalFiles, testCases\n\n2. STARTER CODE VALIDATION\nJAVA:\n- MUST have exactly ONE public class named \"Solution\"\n- MUST NOT have separate \"Main\" class\n- MUST have static methods if main() is present\n- MUST include main() method with 2 example test cases\n- Example format: System.out.println(\"Example 1 — expected=X actual=\" + functionName(...))\n\nPYTHON:\n- MUST have function definition\n- MUST have if __name__ == '__main__': block\n- MUST include 2 example test cases with print statements\n- Example format: print('Example 1 — expected=X actual=', function_name(...))\n\nC:\n- MUST include #include <stdio.h> and #include \"main.h\"\n- MUST have function definition\n- MUST have main() with 2 example test cases\n- Example format: printf(\"Example 1 — expected=X actual=Y\\\\n\", ...)\n\nJAVASCRIPT:\n- MUST have function definition\n- MUST have console.log examples\n- MUST have module.exports at end\n\nTYPESCRIPT:\n- MUST have function with type annotations\n- MUST have console.log examples\n- MUST have export statement\n\nC#:\n- MUST have ONE public class Solution\n- MUST have static methods\n- MUST have Main() method with examples\n\n3. ADDITIONAL FILES VALIDATION\nC/C++:\n- MUST have \"main.h\" file with function declaration and header guards\n- MUST have \"tester.c\" or \"tester.cpp\" file\n\nJAVA:\n- MUST have \"Tester.java\" file\n\nPYTHON:\n- MUST have \"tester.py\" file\n\nJAVASCRIPT:\n- MUST have \"tester.js\" file\n\nTYPESCRIPT:\n- MUST have \"tester.ts\" file\n\nC#:\n- MUST have \"Tester.cs\" file\n\n4. TESTER FILE VALIDATION (CRITICAL)\nALL tester files MUST:\n- Import/include the solution function\n- Define test case data structure with ALL test cases hardcoded\n- Loop through all test cases\n- Print exactly 3 lines: passed=X, total=Y, report=[...]\n\nTESTER INPUT FORMAT VALIDATION (MOST CRITICAL):\nThe input string in tester report MUST use SIMPLIFIED format WITHOUT quotes around keys.\n\nCORRECT FORMATS:\n- {a:5,b:3}\n- {arr:[1,2,3],n:3}\n- {x:10,y:20}\n\nWRONG FORMATS (INVALID):\n- {\"a\":5,\"b\":3} - quotes around keys will break JSON parsing\n- {\"arr\":[1,2,3],\"n\":3} - quotes around keys will break JSON parsing\n\nCheck tester code for these patterns:\nC: sprintf(inputStr, \"{a:%d,b:%d}\", ...) - CORRECT\nC: sprintf(inputStr, \"{\\\\\\\"a\\\\\\\":%d,\\\\\\\"b\\\\\\\":%d}\", ...) - WRONG\n\nJava: String.format(\"{a:%d,b:%d}\", ...) - CORRECT\nJava: String.format(\"{\\\"a\\\":%d,\\\"b\\\":%d}\", ...) - WRONG\n\nJavaScript: `{a:${a},b:${b}}` - CORRECT\nJavaScript: `{\"a\":${a},\"b\":${b}}` - WRONG\n\nCheck The Invalid format for all languages\n\n\n5. TEST CASES VALIDATION\n- MUST have minimum 5 test cases per language\n- Test cases MUST be identical across all languages\n- Input format: {\"param\":value} with proper JSON escaping\n- Expected format: string\n- NO spaces after colons or commas in testCases input\n\n6. DESCRIPTION VALIDATION\nMUST include ALL sections:\n- Problem\n- Input\n- Output\n- Constraints\n- Examples (at least 2)\n- Time & Space Complexity\n- Note (optional but recommended)\n\nVALIDATION CHECKS TO PERFORM:\n\n1. Check Java starterCodes for multiple public classes\n2. Check Java starterCodes for non-static methods when main() exists\n3. Check all starterCodes for presence of main/example code\n4. Check additionalFiles array exists and has required files\n5. Check tester files for input format - MUST use {key:value} not {\"key\":value}\n6. Check tester output format includes passed=, total=, report=\n7. Check testCases array has minimum 5 entries\n8. Check testCases input format is valid JSON\n9. Check description has all required sections\n10. Verify test cases are identical across languages\n\nCRITICAL ERROR EXAMPLES:\n\nJava has separate Main class:\n\"language: java, file: starterCodes, issue: Found separate 'public class Main'. Java must have only ONE public class named 'Solution'\"\n\nTester uses quoted keys:\n\"language: c, file: tester.c, issue: Tester uses sprintf with {\\\\\\\"a\\\\\\\":%d} format. Must use {a:%d} format to avoid JSON parsing errors\"\n\nMissing tester file:\n\"language: python, file: additionalFiles, issue: Missing required tester.py file in additionalFiles array\"\n\nMissing main function:\n\"language: c, file: starterCodes, issue: Missing main() function with example test cases\"\n\nOUTPUT FORMAT (REQUIRED)\nReturn ONLY this JSON structure:\n\n{\n  \"isValid\": true,\n  \"errors\": []\n}\n\nOR if errors found:\n\n{\n  \"isValid\": false,\n  \"errors\": [\n    \"language: java, file: starterCodes, issue: Description of issue\",\n    \"language: python, file: tester.py, issue: Description of issue\"\n  ]\n}\n\nEach error string format: \"language: <lang>, file: <filename>, issue: <description>\"\n\nIf isValid is true, errors array MUST be empty.\nIf isValid is false, errors array MUST contain at least one error string.\n\nFINAL RULE\nAnalyze the provided JSON thoroughly. Return ONLY the validation JSON object. No markdown. No explanations. No extra text.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2528,
+        -288
+      ],
+      "id": "564a1f8b-4b04-4acd-b67d-7cc0ce33dd5b",
+      "name": "Response Validator"
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseGeneratedQuestion(input) {\n  try {\n    let outputStr;\n\n    // Handle different possible shapes\n    if (Array.isArray(input) && input[0]?.output) {\n      outputStr = input[0].output;\n    } else if (typeof input === \"string\") {\n      outputStr = input;\n    } else if (input?.output) {\n      outputStr = input.output;\n    } else {\n      return [{ json: { error: \"Invalid input format\" } }];\n    }\n\n    // Remove markdown wrappers\n    const cleaned = outputStr\n      .replace(/^```json\\s*/i, \"\")\n      .replace(/\\s*```$/i, \"\")\n      .trim();\n\n    // First parse\n    let parsed = JSON.parse(cleaned);\n    let result = parsed;\n\n    // Handle nested \"output\" that contains another JSON string\n    if (parsed && typeof parsed.output === \"string\") {\n      const inner = parsed.output\n        .replace(/^```json\\s*/i, \"\")\n        .replace(/\\s*```$/i, \"\")\n        .trim();\n\n      result = JSON.parse(inner);\n    }\n\n    // n8n requires array of items\n    if (Array.isArray(result)) {\n      return result.map(item => ({ json: item }));\n    }\n\n    return [{ json: result }];\n\n  } catch (e) {\n    return [{ json: { error: e.message } }];\n  }\n}\n\n// IMPORTANT: pass full input JSON\nreturn parseGeneratedQuestion($input.first().json);\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2944,
+        -288
+      ],
+      "id": "1676ee03-0349-4b05-b38c-10c3b5d8215d",
+      "name": "JSON Parser1"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f31279d8-acca-42bb-a7cd-7512ba53780b",
+              "leftValue": "={{ $json.isValid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3200,
+        -80
+      ],
+      "id": "c8dd6ef0-cdd3-472d-8e5e-22cbf2b8683a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n\nreturn $('JSON Parser').first().json"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        -96
+      ],
+      "id": "2a8761ef-b7b7-4013-ba32-95656ba6a13f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Universal JSON Parser for AI Agent Responses\n * Works for both the Metadata Agent and the Language Loop Agent\n */\n\nconst rawResponse = $input.first().json.output; // Adjust 'output' to match your AI node's result key\n\nfunction cleanAndParse(input) {\n  if (!input) return {};\n\n  let cleaned = input.trim();\n\n  // 1. Remove Markdown code blocks if present\n  // Matches ```json { ... } ``` or ``` { ... } ```\n  cleaned = cleaned.replace(/^```(?:json)?/i, \"\").replace(/```$/i, \"\").trim();\n\n  try {\n    // 2. Standard JSON parse\n    return JSON.parse(cleaned);\n  } catch (e) {\n    console.error(\"Standard parsing failed, attempting character recovery...\");\n\n    // 3. Last-ditch effort: Extract anything between the first '{' and last '}'\n    const firstBrace = cleaned.indexOf('{');\n    const lastBrace = cleaned.lastIndexOf('}');\n    \n    if (firstBrace !== -1 && lastBrace !== -1) {\n      try {\n        const extracted = cleaned.substring(firstBrace, lastBrace + 1);\n        return JSON.parse(extracted);\n      } catch (e2) {\n        throw new Error(\"Could not parse AI response as JSON. Raw output: \" + cleaned);\n      }\n    }\n    throw e;\n  }\n}\n\nreturn {\n  data: cleanAndParse(rawResponse)\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        2016
+      ],
+      "id": "337f73cb-e2c2-415c-a454-e745572beebb",
+      "name": "JSON Parser2"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  question: $input.first().json.body.question,\n  questionDescription : $input.first().json.body.description,\n  difficulty : $input.first().json.body.difficulty,\n  languages : $input.first().json.body.languages\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        512,
+        2016
+      ],
+      "id": "2a4e4afe-370b-4118-9b47-cb5dec09f7ec",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        784,
+        2208
+      ],
+      "id": "573a5b23-6897-4fdd-ac77-74ff37c5ea51",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gjNaQMRg2zAkaZCD",
+          "name": "Deepthi Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1328,
+        2240
+      ],
+      "id": "2d662d07-0801-495d-b6bb-e049eea508e1",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Universal JSON Parser for AI Agent Responses\n * Works for both the Metadata Agent and the Language Loop Agent\n */\n\nconst rawResponse = $input.first().json.output; // Adjust 'output' to match your AI node's result key\n\nfunction cleanAndParse(input) {\n  if (!input) return {};\n\n  let cleaned = input.trim();\n\n  // 1. Remove Markdown code blocks if present\n  // Matches ```json { ... } ``` or ``` { ... } ```\n  cleaned = cleaned.replace(/^```(?:json)?/i, \"\").replace(/```$/i, \"\").trim();\n\n  try {\n    // 2. Standard JSON parse\n    return JSON.parse(cleaned);\n  } catch (e) {\n    console.error(\"Standard parsing failed, attempting character recovery...\");\n\n    // 3. Last-ditch effort: Extract anything between the first '{' and last '}'\n    const firstBrace = cleaned.indexOf('{');\n    const lastBrace = cleaned.lastIndexOf('}');\n    \n    if (firstBrace !== -1 && lastBrace !== -1) {\n      try {\n        const extracted = cleaned.substring(firstBrace, lastBrace + 1);\n        return JSON.parse(extracted);\n      } catch (e2) {\n        throw new Error(\"Could not parse AI response as JSON. Raw output: \" + cleaned);\n      }\n    }\n    throw e;\n  }\n}\n\nconst testCases =  cleanAndParse(rawResponse)\n\n\n\n// Get the Metadata from Step 1 (Problem details)\nconst metadata = $('JSON Parser2').first().json.data;\n\n// Get the array of all languages from the Aggregate Node\nconst languageObjects = $('Code in JavaScript1').first().json.languages\n\n// Construct the final object\nreturn {\n  id: metadata.id,\n  title: metadata.title,\n  description: metadata.description,\n  difficulty: metadata.difficulty,\n  testCases : testCases,\n  languages: languageObjects\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1648,
+        2016
+      ],
+      "id": "b622527d-51f0-4481-ad3e-e01b56070356",
+      "name": "JSON Parser3"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "languages",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1856,
+        2016
+      ],
+      "id": "73b14591-72d7-4dd7-8d3c-f38da2887a0a",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        2304
+      ],
+      "id": "9e60ee6f-9439-4f05-9571-0926d4aacfb5",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawOutput = $input.first().json.output;\n\n// Helper to strip markdown and parse\nconst cleanAndParse = (str) => {\n  const cleaned = str.replace(/```json|```/gi, \"\").trim();\n  return JSON.parse(cleaned);\n};\n\nconst parsed = cleanAndParse(rawOutput);\n\n// If your logic requires applying these fixes immediately:\nif (parsed.status === \"error\") {\n  return {\n    isError: true,\n    fixes: parsed.fixes,\n    // Provide a flattened version of the fix for the next node\n    firstFixCode: parsed.fixes[0].value \n  };\n}\n\nreturn { isError: false, data: parsed };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2832,
+        2304
+      ],
+      "id": "0af88405-aedd-4327-8113-9a5ea2c4a9ff",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2096,
+        2032
+      ],
+      "id": "d4765019-fcd3-4ae1-862d-ab5b28138061",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Get metadata from the very first Step (Metadata Agent)\n// Replace \"MetadataAgent\" with the actual name of your first AI node\nconst metadata = $('JSON Parser3').first().json\n\n// 2. Get the aggregated languages (the list you provided)\n// Replace \"AggregateNode\" with the name of your aggregate node\nconst aggregatedLanguages = $input.all().map(item => item.json.data);\n\n// 3. Combine into the final format\nreturn {\n  id: metadata.id,\n  title: metadata.title,\n  description: metadata.description,\n  difficulty: metadata.difficulty,\n  languages: aggregatedLanguages\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2448,
+        1936
+      ],
+      "id": "b14ca7f8-2f3f-4944-b802-f9dc88086c4e",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3088,
+        2176
+      ],
+      "id": "31f1634b-de7c-4e01-b13b-2ba04a78cdff",
+      "name": "Google Gemini Chat Model5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "8469085d-d759-4a3f-94d4-01d8409d1541",
+              "leftValue": "={{ $json.testCases.status }}",
+              "rightValue": "=error",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        3696,
+        1936
+      ],
+      "id": "91eb5fb7-fdd9-41eb-9a1d-1bd190df47da",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const rawOutput = $input.first().json.output;\n\n// Helper to strip markdown and parse\nconst cleanAndParse = (str) => {\n  const cleaned = str.replace(/```json|```/gi, \"\").trim();\n  return JSON.parse(cleaned);\n};\n\nconst testCases = cleanAndParse(rawOutput);\n\n// Get the Metadata from Step 1 (Problem details)\nconst metadata = $('JSON Parser2').first().json.data;\n\n// Get the array of all languages from the Aggregate Node\nconst languageObjects = $('Code in JavaScript1').first().json.languages\n\n// Construct the final object\nreturn {\n  id: metadata.id,\n  title: metadata.title,\n  description: metadata.description,\n  difficulty: metadata.difficulty,\n  testCases : testCases,\n  languages: languageObjects\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3456,
+        1936
+      ],
+      "id": "c3b1fb8c-a928-4661-88ea-5da522d33c68",
+      "name": "JSON Parser5"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        3632,
+        2416
+      ],
+      "id": "2ca9d26e-b035-4ba1-9ea7-7b4eb166b71a",
+      "name": "Google Gemini Chat Model6",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "/**\n * Universal JSON Parser for AI Agent Responses\n * Works for both the Metadata Agent and the Language Loop Agent\n */\n\nconst rawResponse = $input.first().json.output; // Adjust 'output' to match your AI node's result key\n\nfunction cleanAndParse(input) {\n  if (!input) return {};\n\n  let cleaned = input.trim();\n\n  // 1. Remove Markdown code blocks if present\n  // Matches ```json { ... } ``` or ``` { ... } ```\n  cleaned = cleaned.replace(/^```(?:json)?/i, \"\").replace(/```$/i, \"\").trim();\n\n  try {\n    // 2. Standard JSON parse\n    return JSON.parse(cleaned);\n  } catch (e) {\n    console.error(\"Standard parsing failed, attempting character recovery...\");\n\n    // 3. Last-ditch effort: Extract anything between the first '{' and last '}'\n    const firstBrace = cleaned.indexOf('{');\n    const lastBrace = cleaned.lastIndexOf('}');\n    \n    if (firstBrace !== -1 && lastBrace !== -1) {\n      try {\n        const extracted = cleaned.substring(firstBrace, lastBrace + 1);\n        return JSON.parse(extracted);\n      } catch (e2) {\n        throw new Error(\"Could not parse AI response as JSON. Raw output: \" + cleaned);\n      }\n    }\n    throw e;\n  }\n}\n\nconst testCases =  cleanAndParse(rawResponse)\n\n\n\n// Get the Metadata from Step 1 (Problem details)\nconst metadata = $('JSON Parser2').first().json.data;\n\n// Get the array of all languages from the Aggregate Node\nconst languageObjects = $('Code in JavaScript1').first().json.languages\n\n// Construct the final object\nreturn {\n  id: metadata.id,\n  title: metadata.title,\n  description: metadata.description,\n  difficulty: metadata.difficulty,\n  testCases : testCases,\n  languages: languageObjects\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        4032,
+        2208
+      ],
+      "id": "cb2696b0-3696-4b55-85a1-77aec5c99535",
+      "name": "JSON Parser6"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Act as a Senior Technical Writer. Using the input provided, generate the metadata and the HTML description for a coding challenge.\n\nINPUT:\nQuestion title: {{ $json.question }}\nDescription: {{ $json.questionDescription }}\nDifficulty: {{ $json.difficulty }}\n\nOUTPUT RULES:\n- Return ONLY a JSON object.\n- The \"description\" MUST be a LeetCode-style HTML string using inline CSS (Inter font).\n- Style: Use professional spacing, 10px rounded corners for example boxes, and clean <ul> lists for constraints.\n- Sections required: Problem, Input, Output, Constraints, Examples, Time & Space Complexity, and Note.\n\nJSON SCHEMA:\n{\n  \"id\": 100,\n  \"title\": \"...\",\n  \"difficulty\": \"...\",\n  \"description\": \"...\"\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        784,
+        2016
+      ],
+      "id": "64497bcd-5054-45aa-a590-99681e2090b3",
+      "name": "Title and Description"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Act as a QA Engineer. Based on the problem description, generate a universal set of test cases.\n\nINPUT:\n{{ $json.data.title }}\n{{ $json.data.description }}\n\nRULES:\n- Minimum 6 test cases: 2 samples (from Examples) and 4 hidden edge cases.\n- \"input\" must be a stringified JSON (e.g., \"{\\\"a\\\":5,\\\"b\\\":3}\").\n- \"expected\" must be the string representation of the result.\n- Ensure test cases are mathematically and logically 100% accurate.\n\nOUTPUT:\nReturn ONLY a JSON array for the \"testCases\" key.\n[\n  { \"input\": \"...\", \"expected\": \"...\" },\n  ...\n]",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1328,
+        2016
+      ],
+      "id": "75cf00c4-a377-43bd-a1b1-9d0667a2a9ae",
+      "name": "Testcase generator"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Act as a Senior Software Engineer. Generate the coding infrastructure for: **{{ $json.languages }}**.\n\nINPUT CONTEXT:\nProblem: {{ $('JSON Parser3').item.json.title }}\nTest Cases: {{ $('JSON Parser3').item.json.testCases.toJsonString() }}\n\nUNIVERSAL ARCHITECTURE RULES (APPLY TO ALL LANGUAGES):\n1. **Separation of Logic**: \n   - `starterCodes` MUST ONLY contain the function signature, a return of a default value, and a local `main` for the user.\n   - `additionalFiles` (the Tester) MUST NOT contain the implementation of the problem logic. It must call the function from the user's code.\n\n2. **Namespace Safety**:\n   - To avoid \"Defined Twice\" errors: The Tester file must treat the user's code as an external module or dependency.\n   - **C**: Use `#include \"main.h\"`. Do not define the function body in `tester.c`.\n   - **Java**: Put the Tester in `public class Tester`. Call the user's method via `Solution.methodName()`.\n   - **Python**: Use `import solution`. Call `solution.functionName()`.\n   - **JavaScript/TypeScript**: Use `const userCode = require('./solution');`.\n\n3. **Universal Test Harness**:\n   - The tester must iterate through ALL test cases in the `INPUT CONTEXT`.\n   - The tester must print EXACTLY three lines to stdout:\n     passed=<number>\n     total=<number>\n     report=[{\"input\":\"...\",\"expected\":\"...\",\"actual\":\"...\",\"passed\":true|false}]\n\nOUTPUT SCHEMA:\n{\n  \"language\": \"{{ $json.languages }}\",\n  \"starterCodes\": \"...\",\n  \"additionalFiles\": [\n    { \"fileName\": \"...\", \"code\": \"...\" }\n  ],\n  \"testCases\": {{ $('JSON Parser3').item.json.testCases.toJsonString() }}\n}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2432,
+        2112
+      ],
+      "id": "7c4b8e84-1d19-464f-868b-fe1ad3e807b7",
+      "name": "Tester file generator"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=**Role:** Senior SDET and Code Quality Auditor.\n**Task:** Review the generated coding challenge JSON for technical execution errors, specifically focusing on cross-file conflicts and namespace collisions.\n\n**Audit Checklist (CRITICAL):**\n\n1. **Namespace Collision (The \"Defined Twice\" Check):**\n   - **C:** Ensure `tester.c` DOES NOT contain the body of the solution function. It must only declare the prototype or `#include \"main.h\"`.\n   - **Java:** Ensure `Tester.java` DOES NOT contain a class named `Solution` or the implementation of the solution method. It must call `Solution.methodName()`.\n   - **Python:** Ensure `tester.py` DOES NOT redefine the target function. It must `import solution`.\n\n2. **Starter Code Integrity:**\n   - The `starterCodes` MUST NOT contain the answer. It must have an empty function body returning a default value (e.g., `return -1;`).\n   - The `main` method in `starterCodes` must be syntactically correct and use standard libraries.\n\n3. **Tester File Logic:**\n   - The tester MUST print the exact strings: `passed=`, `total=`, and `report=[...]`.\n   - Ensure `report=` output is a valid JSON array string. Check for correctly escaped double quotes (`\\\"`) inside print statements.\n   - Verify that `tester.c` uses `main.h` and doesn't conflict with the user's `main` function (Rename user's main or ensure tester is the entry point).\n\n4. **Schema Consistency:**\n   - Verify keys: `fileName` and `code` in `additionalFiles`.\n   - Verify `input` in `testCases` is a stringified JSON.\n\n**Input JSON to Review:**\n{{ $json.toJsonString() }}\n\n**Output Instruction:**\n- If errors are found: Return a JSON object with `status: \"error\"` and a detailed `fixes: []` array explaining exactly what to change in the code strings.\n- If perfect: Return the original JSON object exactly as is.\n\n\nReturn ONLY a JSON array",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3088,
+        1936
+      ],
+      "id": "5989e1e4-46dd-4b3b-baa6-6fd97f84f9a6",
+      "name": "Error checker"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=**Role:** Senior Polyglot Engineer and Compiler Specialist.\n**Task:** Debug and fix the coding challenge JSON\n\n**INPUTS:**\n- **Full Broken JSON:** {{ $('Code in JavaScript3').item.json.toJsonString() }}\n- **Compiler/Runtime Errors:** {{ $('JSON Parser5').item.json.toJsonString() }}\n\n**CORE OBJECTIVE:**\nYou must return the **entire** JSON object provided in the \"Full Broken JSON\" input, but with the specific code fixes applied to the `starterCodes` and `additionalFiles` \n\n**UNIVERSAL DEBUGGING PROTOCOL:**\n1. **Analyze Error Type:**\n   - If \"Duplicate Definition/Symbol\": The tester file contains the solution logic. **Action:** Remove the function body from the tester; it must only \"import\" or \"link\" to the user's code.\n   - If \"Module Not Found/Class Mismatch\": The filename doesn't match internal structure. **Action:** Align `fileName` with class/module names.\n   - If \"Main Conflict\": **Action:** Use language-specific conditional compilation or wrap the user's `main` in a comment.\n\n2. **The \"Black Box\" Tester Rule:**\n   - The tester file in `additionalFiles` must be a **harness only**. It MUST NOT contain the answer. \n   - **Crucial:** The `report=` line must be a JSON array of objects with keys: `input`, `expected`, `actual`, `passed`. Your current example failed this; fix it to match: `[{\"input\":\"...\", \"expected\":\"...\", \"actual\":\"...\", \"passed\": true}]`.\n\n3. **Starter Code Logic:**\n   - **MANDATORY:** Remove any solution logic. `starterCodes` must have an empty function body returning a default value (e.g., `return 0`).\n\n4. **Regex Compatibility:**\n   - Ensure the tester prints exactly:\n     passed=<number>\n     total=<number>\n     report=[{\"input\":\"...\",\"expected\":\"...\",\"actual\":\"...\",\"passed\":true|false}]\n\n**OUTPUT RULES:**\n- Return ONLY the corrected, **complete** JSON object (including `id`, `title`, `description`, `difficulty`, and the full `languages` array).\n- DO NOT change the schema.\n- DO NOT include conversational filler.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        3632,
+        2208
+      ],
+      "id": "24d4d57f-90bd-4892-bda8-7b2d99dc2955",
+      "name": "JSON fixer"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [\n  {\n    \"id\": 1,\n    \"title\": \"Add 2 numbers\",\n    \"description\": \"<div>\\n  <p><strong>Problem</strong></p>\\n  <p>You are given two non-empty linked lists representing two non-negative integers. The digits are stored in reverse order, and each of their nodes contains a single digit.</p>\\n  <p>Add the two numbers and return the sum as a linked list.</p>\\n  <p>You may assume the two numbers do not contain any leading zero, except the number 0 itself.</p>\\n  <p><strong>Input</strong></p>\\n  <p>Each linked list node contains a single digit. The digits are stored in reverse order (least significant digit first).</p>\\n  <ul>\\n    <li><code>l1</code>: The first linked list.</li>\\n    <li><code>l2</code>: The second linked list.</li>\\n  </ul>\\n  <p><strong>Output</strong></p>\\n  <p>A linked list representing the sum of the two numbers, with digits stored in reverse order.</p>\\n  <p><strong>Constraints</strong></p>\\n  <ul>\\n    <li>The number of nodes in each linked list is between 1 and 100.</li>\\n    <li>0 &lt;= Node.val &lt;= 9</li>\\n    <li>It is guaranteed that the list represents a number that does not have leading zeros, except if the number is 0 itself.</li>\\n  </ul>\\n  <p><strong>Examples</strong></p>\\n  <p><strong>Example 1:</strong></p>\\n  <pre><code>Input:\\\\nl1 = [2,4,3], l2 = [5,6,4]\\\\nOutput: [7,0,8]\\\\nExplanation: 342 + 465 = 807.</code></pre>\\n  <p><strong>Example 2:</strong></p>\\n  <pre><code>Input:\\\\nl1 = [0], l2 = [0]\\\\nOutput: [0]\\\\nExplanation: 0 + 0 = 0.</code></pre>\\n  <p><strong>Time &amp; Space Complexity</strong></p>\\n  <ul>\\n    <li>Expected Time Complexity: O(max(N, M)) where N and M are the lengths of l1 and l2 respectively.</li>\\n    <li>Expected Space Complexity: O(max(N, M)) for the new linked list.</li>\\n  </ul>\\n  <p><strong>Note</strong></p>\\n  <p>The solution should handle carry-overs correctly, including a final carry-over if the sum results in an additional digit.</p>\\n</div>\",\n    \"difficulty\": \"Easy\",\n    \"languages\": [\n      {\n        \"language\": \"c\",\n        \"starterCodes\": \"#include <stdio.h>\\n#include <stdlib.h> // For malloc\\n#include \\\"main.h\\\"\\n\\n// Definition for singly-linked list.\\n// struct ListNode {\\n//     int val;\\n//     struct ListNode *next;\\n// };\\n\\n// Helper function to create a linked list from an array\\nstruct ListNode* createList(int* arr, int size) {\\n    if (size == 0) return NULL;\\n    struct ListNode* head = (struct ListNode*)malloc(sizeof(struct ListNode));\\n    head->val = arr[0];\\n    head->next = NULL;\\n    struct ListNode* current = head;\\n    for (int i = 1; i < size; i++) {\\n        current->next = (struct ListNode*)malloc(sizeof(struct ListNode));\\n        current = current->next;\\n        current->val = arr[i];\\n        current->next = NULL;\\n    }\\n    return head;\\n}\\n\\n// Helper function to convert a linked list to a string for printing\\nvoid printList(struct ListNode* head) {\\n    printf(\\\"[\\\");\\n    int is_first = 1;\\n    while (head != NULL) {\\n        if (!is_first) {\\n            printf(\\\",\\\");\\n        }\\n        printf(\\\"%d\\\", head->val);\\n        head = head->next;\\n        is_first = 0;\\n    }\\n    printf(\\\"]\\\");\\n}\\n\\nstruct ListNode* addTwoNumbers(struct ListNode* l1, struct ListNode* l2) {\\n    struct ListNode* dummyHead = (struct ListNode*)malloc(sizeof(struct ListNode));\\n    dummyHead->val = 0;\\n    dummyHead->next = NULL;\\n    struct ListNode* current = dummyHead;\\n    int carry = 0;\\n\\n    while (l1 != NULL || l2 != NULL || carry != 0) {\\n        int sum = carry;\\n        if (l1 != NULL) {\\n            sum += l1->val;\\n            l1 = l1->next;\\n        }\\n        if (l2 != NULL) {\\n            sum += l2->val;\\n            l2 = l2->next;\\n        }\\n\\n        carry = sum / 10;\\n        current->next = (struct ListNode*)malloc(sizeof(struct ListNode));\\n        current = current->next;\\n        current->val = sum % 10;\\n        current->next = NULL;\\n    }\\n\\n    return dummyHead->next;\\n}\\n\\nint main() {\\n    // Example 1: l1 = [2,4,3], l2 = [5,6,4] -> sum = [7,0,8]\\n    int arr1_1[] = {2,4,3};\\n    struct ListNode* l1_1 = createList(arr1_1, sizeof(arr1_1)/sizeof(arr1_1[0]));\\n    int arr1_2[] = {5,6,4};\\n    struct ListNode* l2_1 = createList(arr1_2, sizeof(arr1_2)/sizeof(arr1_2[0]));\\n    printf(\\\"Example 1 — expected=[7,0,8] actual=\\\");\\n    struct ListNode* result1 = addTwoNumbers(l1_1, l2_1);\\n    printList(result1);\\n    printf(\\\"\\\\n\\\");\\n\\n    // Example 2: l1 = [0], l2 = [0] -> sum = [0]\\n    int arr2_1[] = {0};\\n    struct ListNode* l1_2 = createList(arr2_1, sizeof(arr2_1)/sizeof(arr2_1[0]));\\n    int arr2_2[] = {0};\\n    struct ListNode* l2_2 = createList(arr2_2, sizeof(arr2_2)/sizeof(arr2_2[0]));\\n    printf(\\\"Example 2 — expected=[0] actual=\\\");\\n    struct ListNode* result2 = addTwoNumbers(l1_2, l2_2);\\n    printList(result2);\\n    printf(\\\"\\\\n\\\");\\n\\n    // Free allocated memory (optional for starter code, handled by tester for actual tests)\\n    // freeList(l1_1); freeList(l2_1); freeList(result1);\\n    // freeList(l1_2); freeList(l2_2); freeList(result2);\\n\\n    return 0;\\n}\\n\",\n        \"additionalFiles\": [\n          {\n            \"fileName\": \"main.h\",\n            \"code\": \"#ifndef MAIN_H\\n#define MAIN_H\\nstruct ListNode {\\n    int val;\\n    struct ListNode *next;\\n};\\nstruct ListNode* addTwoNumbers(struct ListNode* l1, struct ListNode* l2);\\n#endif\\n\"\n          },\n          {\n            \"fileName\": \"tester.c\",\n            \"code\": \"#include <stdio.h>\\n#include <stdlib.h> // For malloc\\n#include <string.h> // For strcpy, strcat, strlen, strcmp\\n#include \\\"main.h\\\"\\n\\n// Helper function to create a linked list from an array\\nstruct ListNode* createList(int* arr, int size) {\\n    if (size == 0) return NULL;\\n    struct ListNode* head = (struct ListNode*)malloc(sizeof(struct ListNode));\\n    head->val = arr[0];\\n    head->next = NULL;\\n    struct ListNode* current = head;\\n    for (int i = 1; i < size; i++) {\\n        current->next = (struct ListNode*)malloc(sizeof(struct ListNode));\\n        current = current->next;\\n        current->val = arr[i];\\n        current->next = NULL;\\n    }\\n    return head;\\n}\\n\\n// Helper function to convert a linked list to a string like \\\"[1,2,3]\\\"\\nvoid listToString(struct ListNode* head, char* buffer) {\\n    buffer[0] = '[';\\n    buffer[1] = '\\\\0';\\n    char temp[16];\\n    int is_first = 1;\\n    while (head != NULL) {\\n        if (!is_first) {\\n            strcat(buffer, \\\",\\\");\\n        }\\n        sprintf(temp, \\\"%d\\\", head->val);\\n        strcat(buffer, temp);\\n        head = head->next;\\n        is_first = 0;\\n    }\\n    strcat(buffer, \\\"]\\\");\\n}\\n\\n// Helper to free a linked list\\nvoid freeList(struct ListNode* head) {\\n    struct ListNode* temp;\\n    while (head != NULL) {\\n        temp = head;\\n        head = head->next;\\n        free(temp);\\n    }\\n}\\n\\n\\nint main() {\\n    typedef struct {\\n        int* arr;\\n        int size;\\n    } ListParam;\\n\\n    struct TestCase {\\n        ListParam l1_param;\\n        ListParam l2_param;\\n        char expected_str[256]; // Store expected as string\\n    };\\n\\n    // Define test cases using arrays\\n    int l1_test0_arr[] = {2,4,3}; int l2_test0_arr[] = {5,6,4};\\n    int l1_test1_arr[] = {0}; int l2_test1_arr[] = {0};\\n    int l1_test2_arr[] = {9,9,9,9,9,9,9}; int l2_test2_arr[] = {9,9,9,9};\\n    int l1_test3_arr[] = {5}; int l2_test3_arr[] = {5};\\n    int l1_test4_arr[] = {1,8}; int l2_test4_arr[] = {0};\\n    int l1_test5_arr[] = {9}; int l2_test5_arr[] = {9};\\n    int l1_test6_arr[] = {1,2,3,4}; int l2_test6_arr[] = {5,6};\\n    int l1_test7_arr[] = {7,8,9}; int l2_test7_arr[] = {1};\\n\\n    struct TestCase tests[] = {\\n        {{l1_test0_arr, sizeof(l1_test0_arr)/sizeof(int)}, {l2_test0_arr, sizeof(l2_test0_arr)/sizeof(int)}, \\\"[7,0,8]\\\"},\\n        {{l1_test1_arr, sizeof(l1_test1_arr)/sizeof(int)}, {l2_test1_arr, sizeof(l2_test1_arr)/sizeof(int)}, \\\"[0]\\\"},\\n        {{l1_test2_arr, sizeof(l1_test2_arr)/sizeof(int)}, {l2_test2_arr, sizeof(l2_test2_arr)/sizeof(int)}, \\\"[8,9,9,9,0,0,0,1]\\\"},\\n        {{l1_test3_arr, sizeof(l1_test3_arr)/sizeof(int)}, {l2_test3_arr, sizeof(l2_test3_arr)/sizeof(int)}, \\\"[0,1]\\\"},\\n        {{l1_test4_arr, sizeof(l1_test4_arr)/sizeof(int)}, {l2_test4_arr, sizeof(l2_test4_arr)/sizeof(int)}, \\\"[1,8]\\\"},\\n        {{l1_test5_arr, sizeof(l1_test5_arr)/sizeof(int)}, {l2_test5_arr, sizeof(l2_test5_arr)/sizeof(int)}, \\\"[8,1]\\\"},\\n        {{l1_test6_arr, sizeof(l1_test6_arr)/sizeof(int)}, {l2_test6_arr, sizeof(l2_test6_arr)/sizeof(int)}, \\\"[6,8,3,4]\\\"},\\n        {{l1_test7_arr, sizeof(l1_test7_arr)/sizeof(int)}, {l2_test7_arr, sizeof(l2_test7_arr)/sizeof(int)}, \\\"[8,8,9]\\\"}\\n    };\\n\\n    int numTests = sizeof(tests) / sizeof(tests[0]);\\n    int passed = 0;\\n    char report[8192] = \\\"[\\\"; // Increased size for larger reports\\n\\n    for (int i = 0; i < numTests; i++) {\\n        struct ListNode* l1 = createList(tests[i].l1_param.arr, tests[i].l1_param.size);\\n        struct ListNode* l2 = createList(tests[i].l2_param.arr, tests[i].l2_param.size);\\n\\n        struct ListNode* actual_list = addTwoNumbers(l1, l2);\\n\\n        char actual_str[256];\\n        listToString(actual_list, actual_str);\\n\\n        int ok = (strcmp(actual_str, tests[i].expected_str) == 0);\\n\\n        char l1_str[128];\\n        char l2_str[128];\\n        listToString(l1, l1_str);\\n        listToString(l2, l2_str);\\n\\n        char inputStr[256];\\n        // CRITICAL: Simplified input format for JSON report\\n        sprintf(inputStr, \\\"{l1:%s,l2:%s}\\\", l1_str, l2_str);\\n\\n        char entry[1024]; // Increased size\\n        sprintf(entry,\\n            \\\"{\\\\\\\"input\\\\\\\":\\\\\\\"%s\\\\\\\",\\\\\\\"expected\\\\\\\":\\\\\\\"%s\\\\\\\",\\\\\\\"actual\\\\\\\":\\\\\\\"%s\\\\\\\",\\\\\\\"passed\\\\\\\":%s}%s\\\",\\n            inputStr, tests[i].expected_str, actual_str, ok ? \\\"true\\\" : \\\"false\\\", (i == numTests - 1) ? \\\"\\\" : \\\",\\\");\\n\\n        strcat(report, entry);\\n        if (ok) passed++;\\n        \\n        freeList(l1);\\n        freeList(l2);\\n        freeList(actual_list);\\n    }\\n\\n    strcat(report, \\\"]\\\");\\n\\n    printf(\\\"passed=%d\\\\n\\\", passed);\\n    printf(\\\"total=%d\\\\n\\\", numTests);\\n    printf(\\\"report=%s\\\\n\\\", report);\\n    return 0;\\n}\\n\"\n          }\n        ],\n        \"testCases\": [\n          {\n            \"input\": \"{\\\"l1\\\":[2,4,3],\\\"l2\\\":[5,6,4]}\",\n            \"expected\": \"[7,0,8]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[0],\\\"l2\\\":[0]}\",\n            \"expected\": \"[0]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[9,9,9,9,9,9,9],\\\"l2\\\":[9,9,9,9]}\",\n            \"expected\": \"[8,9,9,9,0,0,0,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[5],\\\"l2\\\":[5]}\",\n            \"expected\": \"[0,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[1,8],\\\"l2\\\":[0]}\",\n            \"expected\": \"[1,8]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[9],\\\"l2\\\":[9]}\",\n            \"expected\": \"[8,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[1,2,3,4],\\\"l2\\\":[5,6]}\",\n            \"expected\": \"[6,8,3,4]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[7,8,9],\\\"l2\\\":[1]}\",\n            \"expected\": \"[8,8,9]\"\n          }\n        ]\n      },\n      {\n        \"language\": \"java\",\n        \"starterCodes\": \"public class Solution {\\n    // Definition for singly-linked list.\\n    public static class ListNode {\\n        int val;\\n        ListNode next;\\n        ListNode(int val) { this.val = val; }\\n        ListNode(int val, ListNode next) { this.val = val; this.next = next; }\\n    }\\n\\n    // Helper function to create a linked list from an array\\n    public static ListNode createList(int[] arr) {\\n        if (arr == null || arr.length == 0) return null;\\n        ListNode head = new ListNode(arr[0]);\\n        ListNode current = head;\\n        for (int i = 1; i < arr.length; i++) {\\n            current.next = new ListNode(arr[i]);\\n            current = current.next;\\n        }\\n        return head;\\n    }\\n\\n    // Helper function to convert a linked list to an array string for printing\\n    public static String listToString(ListNode head) {\\n        StringBuilder sb = new StringBuilder(\\\"[\\\");\\n        while (head != null) {\\n            sb.append(head.val);\\n            head = head.next;\\n            if (head != null) {\\n                sb.append(\\\",\\\");\\n            }\\n        }\\n        sb.append(\\\"]\\\");\\n        return sb.toString();\\n    }\\n\\n    public static ListNode addTwoNumbers(ListNode l1, ListNode l2) {\\n        ListNode dummyHead = new ListNode(0);\\n        ListNode current = dummyHead;\\n        int carry = 0;\\n\\n        while (l1 != null || l2 != null || carry != 0) {\\n            int sum = carry;\\n            if (l1 != null) {\\n                sum += l1.val;\\n                l1 = l1.next;\\n            }\\n            if (l2 != null) {\\n                sum += l2.val;\\n                l2 = l2.next;\\n            }\\n\\n            carry = sum / 10;\\n            current.next = new ListNode(sum % 10);\\n            current = current.next;\\n        }\\n\\n        return dummyHead.next;\\n    }\\n\\n    public static void main(String[] args) {\\n        // Example 1: l1 = [2,4,3], l2 = [5,6,4] -> sum = [7,0,8]\\n        ListNode l1_1 = createList(new int[]{2,4,3});\\n        ListNode l2_1 = createList(new int[]{5,6,4});\\n        System.out.println(\\\"Example 1 — expected=[7,0,8] actual=\\\" + listToString(addTwoNumbers(l1_1, l2_1)));\\n\\n        // Example 2: l1 = [0], l2 = [0] -> sum = [0]\\n        ListNode l1_2 = createList(new int[]{0});\\n        ListNode l2_2 = createList(new int[]{0});\\n        System.out.println(\\\"Example 2 — expected=[0] actual=\\\" + listToString(addTwoNumbers(l1_2, l2_2)));\\n    }\\n}\\n\",\n        \"additionalFiles\": [\n          {\n            \"fileName\": \"Tester.java\",\n            \"code\": \"import java.util.Arrays; // For Array.toString for building input string easily\\n\\npublic class Tester {\\n    // Re-declare ListNode for tester to compile standalone and access Solution's nested ListNode\\n    // Or if Solution.ListNode is public static, can refer to it. Let's make it local for tester.\\n    public static class ListNode {\\n        int val;\\n        ListNode next;\\n        ListNode(int val) { this.val = val; }\\n        ListNode(int val, ListNode next) { this.val = val; this.next = next; }\\n    }\\n\\n    // Helper function to create a linked list from an array (copied from Solution for self-containment)\\n    public static ListNode createList(int[] arr) {\\n        if (arr == null || arr.length == 0) return null;\\n        ListNode head = new ListNode(arr[0]);\\n        ListNode current = head;\\n        for (int i = 1; i < arr.length; i++) {\\n            current.next = new ListNode(arr[i]);\\n            current = current.next;\\n        }\\n        return head;\\n    }\\n\\n    // Helper function to convert a linked list to an array string for printing (copied from Solution)\\n    public static String listToString(ListNode head) {\\n        StringBuilder sb = new StringBuilder(\\\"[\\\");\\n        while (head != null) {\\n            sb.append(head.val);\\n            head = head.next;\\n            if (head != null) {\\n                sb.append(\\\",\\\");\\n            }\\n        }\\n        sb.append(\\\"]\\\");\\n        return sb.toString();\\n    }\\n\\n\\n    public static void main(String[] args) {\\n        Object[][] tests = {\\n            {new int[]{2,4,3}, new int[]{5,6,4}, \\\"[7,0,8]\\\"},\\n            {new int[]{0}, new int[]{0}, \\\"[0]\\\"},\\n            {new int[]{9,9,9,9,9,9,9}, new int[]{9,9,9,9}, \\\"[8,9,9,9,0,0,0,1]\\\"},\\n            {new int[]{5}, new int[]{5}, \\\"[0,1]\\\"},\\n            {new int[]{1,8}, new int[]{0}, \\\"[1,8]\\\"},\\n            {new int[]{9}, new int[]{9}, \\\"[8,1]\\\"},\\n            {new int[]{1,2,3,4}, new int[]{5,6}, \\\"[6,8,3,4]\\\"},\\n            {new int[]{7,8,9}, new int[]{1}, \\\"[8,8,9]\\\"}\\n        };\\n\\n        int passed = 0;\\n        StringBuilder report = new StringBuilder(\\\"[\\\");\\n\\n        for (int i = 0; i < tests.length; i++) {\\n            int[] l1_arr = (int[]) tests[i][0];\\n            int[] l2_arr = (int[]) tests[i][1];\\n            String expected = (String) tests[i][2];\\n\\n            ListNode l1 = createList(l1_arr);\\n            ListNode l2 = createList(l2_arr);\\n            \\n            ListNode actual_list = Solution.addTwoNumbers(l1, l2);\\n            String actual = listToString(actual_list);\\n            boolean ok = actual.equals(expected);\\n\\n            // CRITICAL: Simplified input format for JSON report\\n            String inputStr = String.format(\\\"{l1:%s,l2:%s}\\\", Arrays.toString(l1_arr).replace(\\\" \\\", \\\"\\\"), Arrays.toString(l2_arr).replace(\\\" \\\", \\\"\\\"));\\n\\n            report.append(String.format(\\n                \\\"{\\\\\\\"input\\\\\\\":\\\\\\\"%s\\\\\\\",\\\\\\\"expected\\\\\\\":\\\\\\\"%s\\\\\\\",\\\\\\\"actual\\\\\\\":\\\\\\\"%s\\\\\\\",\\\\\\\"passed\\\\\\\":%s}%s\\\",\\n                inputStr, expected, actual, ok ? \\\"true\\\" : \\\"false\\\", (i == tests.length - 1) ? \\\"\\\" : \\\",\\\"));\\n\\n            if (ok) passed++;\\n        }\\n\\n        report.append(\\\"]\\\");\\n\\n        System.out.println(\\\"passed=\\\" + passed);\\n        System.out.println(\\\"total=\\\" + tests.length);\\n        System.out.println(\\\"report=\\\" + report.toString());\\n    }\\n}\\n\"\n          }\n        ],\n        \"testCases\": [\n          {\n            \"input\": \"{\\\"l1\\\":[2,4,3],\\\"l2\\\":[5,6,4]}\",\n            \"expected\": \"[7,0,8]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[0],\\\"l2\\\":[0]}\",\n            \"expected\": \"[0]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[9,9,9,9,9,9,9],\\\"l2\\\":[9,9,9,9]}\",\n            \"expected\": \"[8,9,9,9,0,0,0,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[5],\\\"l2\\\":[5]}\",\n            \"expected\": \"[0,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[1,8],\\\"l2\\\":[0]}\",\n            \"expected\": \"[1,8]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[9],\\\"l2\\\":[9]}\",\n            \"expected\": \"[8,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[1,2,3,4],\\\"l2\\\":[5,6]}\",\n            \"expected\": \"[6,8,3,4]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[7,8,9],\\\"l2\\\":[1]}\",\n            \"expected\": \"[8,8,9]\"\n          }\n        ]\n      },\n      {\n        \"language\": \"python\",\n        \"starterCodes\": \"# Definition for singly-linked list.\\nclass ListNode:\\n    def __init__(self, val=0, next=None):\\n        self.val = val\\n        self.next = next\\n\\n# Helper function to create a linked list from a list\\ndef create_list(arr):\\n    if not arr:\\n        return None\\n    head = ListNode(arr[0])\\n    current = head\\n    for i in range(1, len(arr)): # Corrected indentation for for loop\\n        current.next = ListNode(arr[i])\\n        current = current.next\\n    return head\\n\\n# Helper function to convert a linked list to a list for printing\\ndef list_to_arr(head):\\n    arr = []\\n    while head:\\n        arr.append(head.val)\\n        head = head.next\\n    return arr\\n\\ndef addTwoNumbers(l1: ListNode, l2: ListNode) -> ListNode:\\n    dummy_head = ListNode(0)\\n    current = dummy_head\\n    carry = 0\\n\\n    while l1 is not None or l2 is not None or carry != 0:\\n        sum_val = carry\\n        if l1 is not None:\\n            sum_val += l1.val\\n            l1 = l1.next\\n        if l2 is not None:\\n            sum_val += l2.val\\n            l2 = l2.next\\n\\n        carry = sum_val // 10\\n        current.next = ListNode(sum_val % 10)\\n        current = current.next\\n    \\n    return dummy_head.next\\n\\nif __name__ == '__main__':\\n    # Example 1: l1 = [2,4,3], l2 = [5,6,4] -> sum = [7,0,8]\\n    l1_1 = create_list([2,4,3])\\n    l2_1 = create_list([5,6,4])\\n    print('Example 1 — expected=[7,0,8] actual=', list_to_arr(addTwoNumbers(l1_1, l2_1)))\\n\\n    # Example 2: l1 = [0], l2 = [0] -> sum = [0]\\n    l1_2 = create_list([0])\\n    l2_2 = create_list([0])\\n    print('Example 2 — expected=[0] actual=', list_to_arr(addTwoNumbers(l1_2, l2_2)))\\n\",\n        \"additionalFiles\": [\n          {\n            \"fileName\": \"tester.py\",\n            \"code\": \"import json\\nimport solution\\n\\n# Helper function to convert a linked list to a list for JSON serialization (copied from solution)\\ndef list_to_arr(head):\\n    arr = []\\n    while head:\\n        arr.append(head.val)\\n        head = head.next\\n    return arr\\n\\ntests = [\\n    ([2,4,3], [5,6,4], [7,0,8]),\\n    ([0], [0], [0]),\\n    ([9,9,9,9,9,9,9], [9,9,9,9], [8,9,9,9,0,0,0,1]),\\n    ([5], [5], [0,1]),\\n    ([1,8], [0], [1,8]),\\n    ([9], [9], [8,1]),\\n    ([1,2,3,4], [5,6], [6,8,3,4]),\\n    ([7,8,9], [1], [8,8,9])\\n]\\n\\npassed = 0\\nreport = []\\n\\nfor i, (l1_arr, l2_arr, expected_arr) in enumerate(tests):\\n    l1 = solution.create_list(l1_arr)\\n    l2 = solution.create_list(l2_arr)\\n    \\n    actual_list = solution.addTwoNumbers(l1, l2)\\n    actual_arr = list_to_arr(actual_list)\\n    ok = actual_arr == expected_arr\\n\\n    input_str_l1 = str(l1_arr).replace(\\\" \\\", \\\"\\\")\\n    input_str_l2 = str(l2_arr).replace(\\\" \\\", \\\"\\\")\\n\\n    input_report_string = f\\\"{{l1:{input_str_l1},l2:{input_str_l2}}}\\\"\\n\\n    report.append({\\n        \\\"input\\\": input_report_string,\\n        \\\"expected\\\": str(expected_arr),\\n        \\\"actual\\\": str(actual_arr),\\n        \\\"passed\\\": ok\\n    })\\n\\n    if ok:\\n        passed += 1\\n\\nprint(f\\\"passed={passed}\\\")\\nprint(f\\\"total={len(tests)}\\\")\\nprint(f\\\"report={json.dumps(report)}\\\")\\n\"\n          }\n        ],\n        \"testCases\": [\n          {\n            \"input\": \"{\\\"l1\\\":[2,4,3],\\\"l2\\\":[5,6,4]}\",\n            \"expected\": \"[7,0,8]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[0],\\\"l2\\\":[0]}\",\n            \"expected\": \"[0]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[9,9,9,9,9,9,9],\\\"l2\\\":[9,9,9,9]}\",\n            \"expected\": \"[8,9,9,9,0,0,0,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[5],\\\"l2\\\":[5]}\",\n            \"expected\": \"[0,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[1,8],\\\"l2\\\":[0]}\",\n            \"expected\": \"[1,8]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[9],\\\"l2\\\":[9]}\",\n            \"expected\": \"[8,1]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[1,2,3,4],\\\"l2\\\":[5,6]}\",\n            \"expected\": \"[6,8,3,4]\"\n          },\n          {\n            \"input\": \"{\\\"l1\\\":[7,8,9],\\\"l2\\\":[1]}\",\n            \"expected\": \"[8,8,9]\"\n          }\n        ]\n      }\n    ]\n  }\n]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2368,
+        -832
+      ],
+      "id": "da7cbf97-edf7-4c47-9673-b1aa8efdee5c",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ce296c8c-1097-4e0e-82f4-6b061db2a180",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        912,
+        1104
+      ],
+      "id": "a8ede03f-acce-4377-bc1a-2fa4881d8427",
+      "name": "getTestCase",
+      "webhookId": "ce296c8c-1097-4e0e-82f4-6b061db2a180"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  question: $input.first().json.body.question,\n  questionDescription : $input.first().json.body.questionDescription,\n  difficulty : $input.first().json.body.difficulty,\n  isModify : Object.keys($input.first().json.body).length > 3,\n  testcases : $input.first().json.body.testCases,\n  testCaseDescription : $input.first().json.body.testCaseDescription\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        1104
+      ],
+      "id": "ec11411f-534b-4aa7-87ea-2fcbaf67a40c",
+      "name": "Input parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        2864,
+        1088
+      ],
+      "id": "2a5b351a-ea03-4c32-923c-697d2c05aeb3",
+      "name": "Testcase Response Webhook"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1856,
+        1504
+      ],
+      "id": "751be9a4-d08c-4202-9bde-d3017ae32389",
+      "name": "Google Gemini Chat Model7",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gjNaQMRg2zAkaZCD",
+          "name": "Deepthi Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a test case generator for coding problems.\n\nI will provide you with:\n- Question : {{ $json.question }}\n- Question description : {{ $json.questionDescription }}\n- Difficulty level : {{ $json.difficulty }}\n\nYour task:\n- Generate a minimum of 7 test cases.\n- The first 5 test cases must have \"hidden\":false.\n- The remaining test cases (at least 2) must have \"hidden\":true.\n- Test cases must cover normal cases, edge cases, and boundary cases.\n- Use realistic values appropriate to the difficulty.\n- Ensure all expected outputs are correct.\n\nTEST CASE OBJECT FORMAT (STRICT):\n{ \"input\":\"{\\\"param1\\\":value1,\\\"param2\\\":value2}\",\"expected\":\"result\",\"hidden\":false }\n\nFORMATTING RULES (MANDATORY):\n- Input must be a JSON string with escaped double quotes.\n- NO spaces after colons or commas inside JSON.\n- NO trailing commas.\n- Keys and string values must use double quotes only.\n- Expected must always be a string.\n- Boolean values must be lowercase (true/false).\n\nExamples of VALID input JSON:\n{\"a\":5,\"b\":3}\n{\"arr\":[1,2,3],\"n\":3}\n\nINVALID examples:\n{\"a\": 5,\"b\":3}\n{\"a\":5, \"b\":3}\n\nOUTPUT RULES:\n- Output ONLY the following structure.\n- Do NOT include explanations, markdown, or extra text.\n- Do NOT wrap the output in code blocks.\n\n\"testCases\":[\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":true },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":true }\n]\n\nSTRICT RULES:\n- Maintain exact JSON structure and ordering.\n- Do NOT rename fields.\n- Do NOT change formatting or spacing.\n- Do NOT include comments or metadata.\n- Any deviation from the format is INVALID.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1856,
+        1296
+      ],
+      "id": "0ce091a3-b541-4efa-bcc2-cba73bb654fd",
+      "name": "TestCases Generator"
+    },
+    {
+      "parameters": {
+        "jsCode": "function parseGeneratedQuestion(input) {\n  try {\n    let outputStr;\n\n    // 1. Normalize input shape\n    if (Array.isArray(input) && input[0]?.output) {\n      outputStr = input[0].output;\n    } else if (typeof input === \"string\") {\n      outputStr = input;\n    } else if (input?.output) {\n      outputStr = input.output;\n    } else {\n      return [{ json: { error: \"Invalid input format\" } }];\n    }\n\n    // 2. Remove markdown wrappers if present\n    let cleaned = outputStr\n      .replace(/^```(?:json)?\\s*/i, \"\")\n      .replace(/\\s*```$/i, \"\")\n      .trim();\n\n    let parsed;\n\n    // 3. Handle case: string starts with `\"testCases\": [...]`\n    if (/^\"testCases\"\\s*:/.test(cleaned)) {\n      cleaned = `{${cleaned}}`;\n    }\n\n    // 4. First parse attempt\n    parsed = JSON.parse(cleaned);\n\n    // 5. Handle nested output string (double-encoded JSON)\n    if (parsed && typeof parsed.output === \"string\") {\n      let inner = parsed.output\n        .replace(/^```(?:json)?\\s*/i, \"\")\n        .replace(/\\s*```$/i, \"\")\n        .trim();\n\n      if (/^\"testCases\"\\s*:/.test(inner)) {\n        inner = `{${inner}}`;\n      }\n\n      parsed = JSON.parse(inner);\n    }\n\n    // 6. n8n requires array of items\n    if (Array.isArray(parsed)) {\n      return parsed.map(item => ({ json: item }));\n    }\n\n    return [{ json: parsed }];\n\n  } catch (e) {\n    return [\n      {\n        json: {\n          error: \"Parsing failed\",\n          message: e.message,\n          rawInput: input\n        }\n      }\n    ];\n  }\n}\n\n// IMPORTANT: pass full input JSON\nreturn parseGeneratedQuestion($input.first().json);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2464,
+        1088
+      ],
+      "id": "ead0d4c1-e67b-45c7-8148-59f1d96b3782",
+      "name": "Output JSON Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1872,
+        1056
+      ],
+      "id": "3fd1e9c8-34e2-4e60-8a07-50ac137496ab",
+      "name": "Google Gemini Chat Model8",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gjNaQMRg2zAkaZCD",
+          "name": "Deepthi Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a test case modifier for coding problems.\n\nI will provide you with:\n- Question : {{ $json.question }}\n- Question description : {{ $json.questionDescription }}\n- Difficulty level : {{ $json.difficulty }}\n- Existing test cases : {{ $json.testCases }}\n- Test case modification instructions : {{ $json.testCaseDescription }}\n\nYour task:\n- Modify the provided test cases strictly according to the modification instructions.\n- Add, remove, or update test cases ONLY if explicitly required.\n- Ensure the final output contains a minimum of 7 test cases.\n- The first 5 test cases must have \"hidden\":false.\n- The remaining test cases (at least 2) must have \"hidden\":true.\n- Ensure all expected outputs remain correct after modification.\n- Preserve valid existing test cases unless instructed otherwise.\n\nTEST CASE OBJECT FORMAT (STRICT):\n{ \"input\":\"{\\\"param1\\\":value1,\\\"param2\\\":value2}\",\"expected\":\"result\",\"hidden\":false }\n\nFORMATTING RULES (MANDATORY):\n- Input must be a JSON string with escaped double quotes.\n- NO spaces after colons or commas inside JSON.\n- NO trailing commas.\n- Keys and string values must use double quotes only.\n- Expected must always be a string.\n- Boolean values must be lowercase (true/false).\n\nExamples of VALID input JSON:\n{\"a\":5,\"b\":3}\n{\"arr\":[1,2,3],\"n\":3}\n\nINVALID examples:\n{\"a\": 5,\"b\":3}\n{\"a\":5, \"b\":3}\n\nOUTPUT RULES:\n- Output ONLY the following structure.\n- Do NOT include explanations, markdown, or extra text.\n- Do NOT wrap the output in code blocks.\n\n\"testCases\":[\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":false },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":true },\n  { \"input\":\"{\\\"key\\\":value}\",\"expected\":\"result\",\"hidden\":true }\n]\n\nSTRICT RULES:\n- Maintain exact JSON structure and ordering.\n- Do NOT rename fields.\n- Do NOT change formatting or spacing.\n- Do NOT include comments or metadata.\n- Any deviation from the format is INVALID.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        1872,
+        848
+      ],
+      "id": "66fc52fd-f722-4a5f-9e72-7b4ec488900d",
+      "name": "TestCases Modifier"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "2f823d56-2ba6-423b-beac-4fba370c08e8",
+              "leftValue": "={{ $json.isModify }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1456,
+        1104
+      ],
+      "id": "80b56978-0fa3-4e70-8586-90938775d162",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "content": "## Testcases Generator\n",
+        "height": 1152,
+        "width": 2528
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        816,
+        560
+      ],
+      "typeVersion": 1,
+      "id": "3ead4d33-c5e3-4ea6-a222-a42cacba5264",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Question Generator\n",
+        "height": 864,
+        "width": 3664
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        560,
+        -544
+      ],
+      "typeVersion": 1,
+      "id": "d26c2b4b-5b88-4432-a916-7eee841b2006",
+      "name": "Sticky Note1"
+    }
+  ],
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get parseTestCaseStr": {
+      "main": [
+        [
+          {
+            "node": "Question Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question Generator": {
+      "main": [
+        [
+          {
+            "node": "JSON Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parser": {
+      "main": [
+        [
+          {
+            "node": "Response Validator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "get parseTestCaseStr",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Response Validator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response Validator": {
+      "main": [
+        [
+          {
+            "node": "JSON Parser1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parser1": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Question Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parser2": {
+      "main": [
+        [
+          {
+            "node": "Testcase generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Title and Description",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Title and Description",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Testcase generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parser3": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Tester file generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Tester file generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Error checker",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Error checker",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [],
+        [
+          {
+            "node": "JSON fixer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parser5": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model6": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "JSON fixer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Title and Description": {
+      "main": [
+        [
+          {
+            "node": "JSON Parser2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Testcase generator": {
+      "main": [
+        [
+          {
+            "node": "JSON Parser3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tester file generator": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Error checker": {
+      "main": [
+        [
+          {
+            "node": "JSON Parser5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON fixer": {
+      "main": [
+        [
+          {
+            "node": "JSON Parser6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        []
+      ]
+    },
+    "getTestCase": {
+      "main": [
+        [
+          {
+            "node": "Input parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Input parser": {
+      "main": [
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model7": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TestCases Generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestCases Generator": {
+      "main": [
+        [
+          {
+            "node": "Output JSON Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Output JSON Parser": {
+      "main": [
+        [
+          {
+            "node": "Testcase Response Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model8": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "TestCases Modifier",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TestCases Modifier": {
+      "main": [
+        [
+          {
+            "node": "Output JSON Parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "TestCases Modifier",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "TestCases Generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e05b075be8ef346bc5d56687c9a460aafa779f6b55bb4aecf0a10d3a98a7526"
+  }
+}
