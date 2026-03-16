@@ -1,0 +1,653 @@
+{
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1568,
+        -16
+      ],
+      "id": "f4c9a7f3-3673-48cb-8629-a6135bfba0bb",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "collection": "users",
+        "fields": "=usn,state",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        1200,
+        512
+      ],
+      "id": "be1af90b-f853-406a-8667-3827254dec12",
+      "name": "Insert documents",
+      "credentials": {
+        "mongoDb": {
+          "id": "HwdpEwLNgIYySr6Z",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": true,
+        "values": {
+          "string": [
+            {
+              "name": "usn",
+              "value": "={{ $('Student batch').item.json.user_id }}"
+            },
+            {
+              "name": "state",
+              "value": "true"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "ad5614fd-b69b-4c5c-9774-cdc0e96030f2",
+      "name": "Set Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [
+        976,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "collection": "users",
+        "options": {},
+        "query": "={\n  \"usn\": \"{{$json.user_id}}\"\n}\n"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -288,
+        240
+      ],
+      "id": "79aafce2-bc89-4dfc-9663-baeb6d55ef86",
+      "name": "Find documents",
+      "alwaysOutputData": true,
+      "credentials": {
+        "mongoDb": {
+          "id": "HwdpEwLNgIYySr6Z",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://drive.google.com/file/d/1D3pOf2biS3B_Iit3X4bZbgXILmOWHujJ/view?usp=sharing",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1120,
+        -16
+      ],
+      "id": "0aa8c6ef-e579-449e-b748-d73bd4439fe2",
+      "name": "Download Meta JSON ZIP1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "no66kBCuSvHSaUay",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        -864,
+        -16
+      ],
+      "id": "127d955a-b547-42f1-9128-413c2c24590a",
+      "name": "Extract ZIP1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const results = [];\n\nfor (let i = 0; i < items.length; i++) {\n  const item = items[i];\n\n  for (const key of Object.keys(item.binary)) {\n    const binary = item.binary[key];\n\n    // Only process JSON files\n    if (binary.mimeType === 'application/json') {\n\n      // ✅ Correct way to read binary in filesystem-v2\n      const buffer = await this.helpers.getBinaryDataBuffer(i, key);\n      const jsonString = buffer.toString('utf8');\n\n      results.push({\n        json: JSON.parse(jsonString)\n      });\n    }\n  }\n}\n\nreturn results;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -624,
+        -16
+      ],
+      "id": "b0bcf4c7-e30f-4421-8f72-e55143a6d0cd",
+      "name": "Parse Extracted Files1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Evaluate the following student's exam performance based on the data provided.\n\nStudent ID: {{$('Student batch').item.json.user_id}}\nStudent email : {{ $('Student batch').item.json.user_email }}\nExam Code: {{$('Student batch').item.json.exam_code}}\n\nExam Summary:\n- Attempted Questions: {{$('Student batch').item.json.finalReport.attemptedQuestions}}\n- Forced Submission: {{$('Student batch').item.json.finalReport.isForceSubmit}}\n\nMalpractice Summary:\n- Total Violations: {{ $('Student batch').item.json.finalReport.malpracticeReport.totalViolations }}\n- Severity Level: {{ $('Student batch').item.json.finalReport.malpracticeReport.severity }}\n- Exam Duration: {{ $('Student batch').item.json.finalReport.malpracticeReport.duration }}\n\nQuestions : \n{{$('find questions').item.toJsonString()}}\n\nQuestion Performance Data:\n{{ $('Student batch').item.json.finalReport.questionReports.toJsonString() }}\n\n\nTasks:\n\nMatch the id's from Questions with questionId from question perform data\nsample example :\n{{ $('find questions').item.json.id }} check with\n{{ $('Student batch').item.json.finalReport.questionReports[0].questionId }}\n\n\n1. Assess the student's overall performance.\n2. Check the approach for question, Even if unsolved - make a remark on that\n3. Comment on engagement and completion.\n4. Identify strengths or weaknesses if visible.\n5. Comment on exam integrity based on malpractice data.\n6. Give a final evaluation marks out of 10.\n\nOutput format (JSON only):\n{\n  \"StudentID\": {{$json.user_id}},\n  \"StudentEmail\" : {{ $json.user_email }},\n  \"ExamCode\": {{$json.exam_code}},\n  \"ApproachAssessment\" : \"Excellent | Good | Average | Poor\",\n  \"performanceLevel\": \"Excellent | Good | Average | Poor\",\n  \"overallAssessment\": \"\",\n  \"finalRemark\": \"0/10\"\n}\n\n\n******************************\nReturn ONLY valid raw JSON.\nNo markdown.\nNo explanations.\nNo code fences.\n******************************\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        416,
+        224
+      ],
+      "id": "b3d27a38-b432-4a0c-a353-2f31502c8604",
+      "name": "AI Evaluation Prompt2"
+    },
+    {
+      "parameters": {
+        "amount": 3
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        768,
+        224
+      ],
+      "id": "d8382868-7a8f-466b-a68e-ed44a05a106b",
+      "name": "Wait3",
+      "webhookId": "d1618199-aee1-4b86-8b88-3d98ed710602"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Loop over input items and add a new field called 'myNewField' to the JSON of each one\nfor (const item of $input.all()) {\n  item.json.myNewField = 1;\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        176,
+        -32
+      ],
+      "id": "fa567676-18a1-4c90-9fb6-a717731ee096",
+      "name": "Code in JavaScript6"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        208,
+        224
+      ],
+      "id": "abc48e42-6acc-426c-8ff7-bfe0b65c3552",
+      "name": "Wait4",
+      "webhookId": "c1840adf-0117-4c87-819a-e87b7ad791f3"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        416,
+        416
+      ],
+      "id": "a3272b4d-8cb7-48f0-938f-9c75ec0ca29c",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "gjNaQMRg2zAkaZCD",
+          "name": "Deepthi Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1AvPluhI-VRuHHQK4f3tAcQP-naDnwhMSsr_Il1HeKjs",
+          "mode": "list",
+          "cachedResultName": "Exam-AI-Evaluation",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AvPluhI-VRuHHQK4f3tAcQP-naDnwhMSsr_Il1HeKjs/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1AvPluhI-VRuHHQK4f3tAcQP-naDnwhMSsr_Il1HeKjs/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "StudentID",
+              "displayName": "StudentID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "StudentEmail",
+              "displayName": "StudentEmail",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ExamCode",
+              "displayName": "ExamCode",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ApproachAssessment",
+              "displayName": "ApproachAssessment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "performanceLevel",
+              "displayName": "performanceLevel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "overallAssessment",
+              "displayName": "overallAssessment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "finalRemark",
+              "displayName": "finalRemark",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1200,
+        224
+      ],
+      "id": "b804f371-8fb8-43cb-8ad9-f42abf9dec24",
+      "name": "Append row in sheet1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "aqH2mP7Cb3Ek9BQu",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "collection": "users",
+        "options": {},
+        "query": "{\n  \n}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -1408,
+        1920
+      ],
+      "id": "08bb0109-a383-4d4a-8942-b4f7203beb22",
+      "name": "find questions1",
+      "credentials": {
+        "mongoDb": {
+          "id": "HwdpEwLNgIYySr6Z",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "16221fad-c6c9-4ea8-b80d-b186ac75a5ab",
+              "leftValue": "={{$json.isEmpty()}}",
+              "rightValue": 0,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -48,
+        240
+      ],
+      "id": "da5e308f-7ef1-4b31-8c6d-85f79af2947a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "collection": "questions",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -1344,
+        -16
+      ],
+      "id": "784ae8e6-7dbe-45c6-ac35-300389b5629b",
+      "name": "find questions",
+      "credentials": {
+        "mongoDb": {
+          "id": "HwdpEwLNgIYySr6Z",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "batchSize": "=1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -336,
+        -16
+      ],
+      "id": "a66406a8-1790-4946-a0d4-e8cf8fe85ef8",
+      "name": "Student batch"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Step 1: Extract string\nlet raw = $input.first().json.output\n\n// Step 2: Remove ```json and ```\nraw = raw.replace(/```json|```/g, \"\").trim();\n\n// Step 3: Parse to valid JSON\nconst parsedJson = JSON.parse(raw);\n\n// Output\nconsole.log(parsedJson);\nreturn parsedJson;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        976,
+        224
+      ],
+      "id": "6386f57a-f9fb-4ba6-a9aa-3bc2324449be",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input exactly like what you showed\nconst input = [\n  {\n    output: \"```json\\n{\\n  \\\"StudentID\\\": 24250218,\\n  \\\"StudentEmail\\\": \\\"24250218viyola@staloysius.ac.in\\\",\\n  \\\"ExamCode\\\": \\\"A\\\",\\n  \\\"ApproachAssessment\\\": \\\"Average\\\",\\n  \\\"performanceLevel\\\": \\\"Good\\\",\\n  \\\"overallAssessment\\\": \\\"The student attempted 4 out of 5 questions, demonstrating a good level of engagement and completion. They successfully solved questions related to finding the longest consecutive sequence of 1s and detecting cheating based on matching strings. However, the student struggled with the 'Total Active Minutes' question, where their logic for merging intervals was flawed, leading to incorrect outputs for some test cases.  Their approach to the 'Max Revenue' question was not submitted. The SQL query for question 17 was incomplete and likely incorrect, only producing a single row of output. The student's code for the solved questions is generally clean and efficient, showing an understanding of basic algorithms.\\\",\\n  \\\"finalRemark\\\": \\\"6/10\\\"\\n}\\n```\"\n  }\n];\n\n// Step 1: Extract string\nlet raw = input[0].output;\n\n// Step 2: Remove ```json and ```\nraw = raw.replace(/```json|```/g, \"\").trim();\n\n// Step 3: Parse to valid JSON\nconst parsedJson = JSON.parse(raw);\n\n// Output\nconsole.log(parsedJson);\nreturn parsedJson;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1408,
+        2112
+      ],
+      "id": "0fab7042-720f-4232-a653-e1c8336f2f0f",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "content": "## Exam AI Evaluator",
+        "height": 144,
+        "width": 2128
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1616,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "e09f1197-9801-4337-a3c8-260cef1ced43",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "find questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert documents": {
+      "main": [
+        [
+          {
+            "node": "Student batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set Data": {
+      "main": [
+        [
+          {
+            "node": "Insert documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find documents": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Meta JSON ZIP1": {
+      "main": [
+        [
+          {
+            "node": "Extract ZIP1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ZIP1": {
+      "main": [
+        [
+          {
+            "node": "Parse Extracted Files1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Extracted Files1": {
+      "main": [
+        [
+          {
+            "node": "Student batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Evaluation Prompt2": {
+      "main": [
+        [
+          {
+            "node": "Wait3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait4": {
+      "main": [
+        [
+          {
+            "node": "AI Evaluation Prompt2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Evaluation Prompt2",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Set Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Wait4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Student batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "find questions": {
+      "main": [
+        [
+          {
+            "node": "Download Meta JSON ZIP1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Student batch": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e05b075be8ef346bc5d56687c9a460aafa779f6b55bb4aecf0a10d3a98a7526"
+  }
+}
