@@ -1,0 +1,334 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Function node: produce a clean JSON payload at $json\nconst incomingComments = $json.comments || []; // ensure it's an array\n\nconst comments = incomingComments\n  // ADD THIS FILTER: Exclude files that are typically binary/non-text diffs\n  .filter(c => {\n    if (!c || !c.path || !c.body) return false;\n    const path = c.path.toLowerCase();\n    return !(\n      path.endsWith('.png') ||\n      path.endsWith('.jpg') ||\n      path.endsWith('.jpeg') ||\n      path.endsWith('.gif') ||\n      path.endsWith('.ico') ||\n      path.endsWith('.bin')\n      // Add any other binary extensions you encounter\n    );\n  })\n  .map(c => {\n    // Try to get line from c.line or c.position, defaulting to 1 (first changed line)\n    // We use Math.floor to ensure an integer, and check if it's > 0 (as line 0 is often invalid)\n    const lineNum = Number.isFinite(Number(c.line)) ? Number(c.line) : Number(c.position);\n    \n    let finalLine = 1;\n    if (Number.isFinite(lineNum) && lineNum > 0) {\n      finalLine = Math.floor(lineNum);\n    }\n    \n    return {\n      path: String(c.path),\n      // IMPORTANT: Use 'line' and 'side' instead of 'position' for reliability\n      line: finalLine, \n      side: 'RIGHT', // Anchors the comment to the head branch file\n      body: String(c.body).slice(0, 1000) // truncate for safety\n    };\n  });\n\nreturn [{ json: {\n  body: \"Automated code review: see inline comments for details.\",\n  event: \"COMMENT\",\n  comments\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1456,
+        752
+      ],
+      "id": "8701f1d5-af5c-4000-9d23-225d1e44ec2e",
+      "name": "Json(body) formatter"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Github Trigger').first().json.body.pull_request.url + '/reviews' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "165e8b27-f216-4809-acb2-bda30e6ee7df",
+      "name": "Post PR Review",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1712,
+        752
+      ],
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "lX1Qkv67nbivgtki",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Function node: parse code-fence JSON from LLM outputs and return normalized comments + PR number\n\nfunction extractJsonFromCodeFence(text) {\n  if (typeof text !== 'string') return null;\n  const m = text.match(/```(?:json)?\\n([\\s\\S]*?)```/);\n  const candidate = m ? m[1].trim() : text.trim();\n  try {\n    return JSON.parse(candidate);\n  } catch (e) {\n    return null;\n  }\n}\n\nconst all = $input.all();\nconst comments = [];\n\n// Helper function to normalize and push a single comment\nconst normalizeAndPushComment = (c, reviewBody) => {\n  // Check if the line number is valid and not 0 (0 is often invalid for comments)\n  const lineNumber = (typeof c.position === 'number' && Number.isFinite(c.position) && c.position > 0)\n    ? c.position\n    : ((typeof c.line === 'number' && Number.isFinite(c.line) && c.line > 0) ? c.line : null);\n  \n  // Skip if path or body is missing, or if line is invalid\n  if (!c.path && !c.file) return;\n  if (!c.body && !c.comment && !reviewBody) return; // Must have a body/comment\n\n  comments.push({\n    path: c.path ?? c.file ?? null,\n    body: (c.body ?? c.comment ?? reviewBody ?? '').toString(),\n    // IMPORTANT FIX: Use 'line' instead of 'position' and set 'side'\n    line: lineNumber,\n    side: 'RIGHT', // Anchor comment to the head branch file\n    severity: c.severity ?? 'low'\n  });\n};\n\n\n// iterate each input item and try to extract JSON inside content.parts[*].text\nfor (const item of all) {\n  const json = item.json;\n  let reviewBody = null; // Used for a potential top-level review body if it exists\n\n  // 1) If the shape already contains comments at top-level, accept them\n  if (Array.isArray(json.comments) && json.comments.length > 0) {\n    for (const c of json.comments) {\n      normalizeAndPushComment(c, json.body);\n    }\n    continue;\n  }\n\n  // 2) If there is content.parts[*].text (LLM shape), parse the code-fence JSON inside each part\n  const parts = json?.content?.parts;\n  if (Array.isArray(parts)) {\n    for (const p of parts) {\n      const txt = p?.text;\n      if (!txt) continue;\n      const parsed = extractJsonFromCodeFence(txt);\n      if (!parsed) continue;\n      \n      reviewBody = parsed.body ?? null;\n\n      // parsed might include reviewBody, comments array, or a single comment object\n      if (Array.isArray(parsed.comments)) {\n        for (const c of parsed.comments) {\n          normalizeAndPushComment(c, reviewBody);\n        }\n      } else if (parsed.path || parsed.file) {\n        // single comment object (must have path/file to be a comment)\n        normalizeAndPushComment(parsed, reviewBody);\n      }\n    }\n    continue;\n  }\n\n  // 3) Last fallback: maybe the item.json itself is a JSON string containing the review object\n  if (typeof json === 'string') {\n    const parsed = extractJsonFromCodeFence(json) || (function(){ try { return JSON.parse(json); } catch(e){ return null; } })();\n    if (parsed && Array.isArray(parsed.comments)) {\n      for (const c of parsed.comments) {\n        normalizeAndPushComment(c, parsed.body);\n      }\n    }\n  }\n}\n\n// Deduplicate exact duplicate comments (optional)\nconst seen = new Set();\nconst deduped = [];\nfor (const c of comments) {\n  // Use 'line' instead of 'position' for the key\n  const key = `${c.path||''}||${c.line||''}||${c.body}`;\n  if (!seen.has(key)) {\n    seen.add(key);\n    deduped.push(c);\n  }\n}\n\n// get PR number from GitHub Trigger node (adjust node name if different)\nlet prNumber = null;\ntry {\n  prNumber = $('Github Trigger1').first().json?.body?.number ?? $('GitHub Trigger').first().json?.body?.number ?? null;\n} catch (e) {\n  // ignore\n}\n\nreturn [{\n  json: {\n    comments: deduped,\n    number: prNumber\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        752
+      ],
+      "id": "06e4bd90-203a-4777-83b7-54d41be0d3ed",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash-lite"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "={{ $json.reviewPrompt}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        816,
+        752
+      ],
+      "id": "c5cd241c-1836-49da-b603-2464d81f8647",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        752
+      ],
+      "id": "92e8961e-2aa2-4296-94a2-382e8448ce29",
+      "name": "per item throttle",
+      "webhookId": "5d961def-a0d6-4a68-b3e2-2edbd86a52f5"
+    },
+    {
+      "parameters": {
+        "jsCode": "const instructions = `\nUse meaningful and descriptive names that clearly explain the purpose.\nKeep every function small, focused, and limited to a single responsibility.\nFollow a consistent formatting style to improve code readability everywhere.\nWrite clear code so that comments are rarely ever truly necessary.\nAvoid repeating logic; extract common functionality into reusable components.\nSeparate concerns by organizing code based on responsibility and functionality.\nWrite automated tests to ensure code works correctly and remains stable.\nHandle errors gracefully with informative messages and proper fallback logic.\nStructure your application into independent, modular, and well-defined components.\nRegularly refactor and improve code to keep it clean and maintainable.\n`;\n\nfor (const item of $input.all()) {\n  const file = item.json;\n\n  const reviewPrompt = `\nYou are a senior software engineer reviewing a pull request.\n\n${instructions}\n\nReview the GitHub diff for: ${file.filename}\n\nPatch:\n\\`\\`\\`diff\n${file.patch}\n\\`\\`\\`\n\nOUTPUT FORMAT: Strict JSON (no markdown fences)\n{\n  \"reviewBody\": \"One short paragraph summarizing the review for this file.\",\n  \"comments\": [\n    {\n      \"path\": \"${file.filename}\",\n      \"body\": \"Specific, actionable feedback tied to a single issue.\",\n      \"position\": 0\n    }\n  ]\n}\nRules:\n- Return valid JSON only (no extra text).\n- \"position\" is the integer diff position for this file.\n- Include 1–3 high-value comments; omit if nothing to add.\n`;\n\n  item.json.reviewPrompt = reviewPrompt;\n}\n\nreturn $input.all();\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        736
+      ],
+      "id": "13baf6d6-43d6-4a79-afdb-3d2c9e57ac12",
+      "name": "Add review prompt"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.body.pull_request.url }}/files",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -176,
+        736
+      ],
+      "id": "0a333736-22d7-4357-a386-18d1fe2685ef",
+      "name": "Get File Changes",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "lX1Qkv67nbivgtki",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "owner": {
+          "__rl": true,
+          "value": "Bharath-devappsys",
+          "mode": "name"
+        },
+        "repository": {
+          "__rl": true,
+          "value": "StaffNotes",
+          "mode": "list",
+          "cachedResultName": "StaffNotes",
+          "cachedResultUrl": "https://github.com/Bharath-devappsys/StaffNotes"
+        },
+        "events": [
+          "pull_request"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.githubTrigger",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        736
+      ],
+      "id": "389bae46-3033-427a-a777-dcc8dfcfca54",
+      "name": "Github Trigger",
+      "webhookId": "fec63f23-299f-40e8-a98c-0b61ec36af5e",
+      "credentials": {
+        "githubApi": {
+          "id": "4ERTeL7sSviUdGwR",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 10
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1664,
+        992
+      ],
+      "id": "ddde4fd3-e3ac-46d9-acec-a01bda3efb42",
+      "name": "Wait 10s (Rate Limit Reset)",
+      "webhookId": "9a460d55-8da9-4753-a62b-b7dda1ff6e22"
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        272,
+        736
+      ],
+      "id": "e0c4300d-62fe-416b-a8d9-8eb548b8a6e3",
+      "name": "Loop Over Items (Batch of 5)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "## Code Reviewer\n",
+        "height": 864,
+        "width": 2848
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -608,
+        528
+      ],
+      "typeVersion": 1,
+      "id": "7155169a-b312-444c-86a3-9dd158117d04",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "Json(body) formatter": {
+      "main": [
+        [
+          {
+            "node": "Post PR Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Post PR Review": {
+      "main": [
+        [
+          {
+            "node": "Wait 10s (Rate Limit Reset)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Json(body) formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "per item throttle": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add review prompt": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (Batch of 5)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get File Changes": {
+      "main": [
+        [
+          {
+            "node": "Add review prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Github Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get File Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 10s (Rate Limit Reset)": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items (Batch of 5)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items (Batch of 5)": {
+      "main": [
+        [],
+        [
+          {
+            "node": "per item throttle",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e05b075be8ef346bc5d56687c9a460aafa779f6b55bb4aecf0a10d3a98a7526"
+  }
+}
