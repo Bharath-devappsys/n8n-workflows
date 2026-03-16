@@ -1,0 +1,824 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Requirements",
+        "formDescription": "This is for gathering requirements about project\n",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Project name",
+              "placeholder": "Enter project name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Project description",
+              "fieldType": "textarea",
+              "placeholder": "please provide detailed description of your project.",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        208
+      ],
+      "id": "1d0764c9-74f6-43c6-bdd4-a76963f8c867",
+      "name": "On form submission",
+      "webhookId": "1e6348d5-db71-4793-ad23-1ecf25ce10e0"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        224,
+        432
+      ],
+      "id": "c1b7099f-520f-46c5-804c-ff36941964a8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Require gathering\n getting required information about the project",
+        "height": 608,
+        "width": 1280
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "0246b8ea-2d67-4058-ad2a-47d7069cd410",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Backend \ngenerating backend structure",
+        "height": 688,
+        "width": 2928
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        832
+      ],
+      "typeVersion": 1,
+      "id": "74c72381-2486-4e21-a6c4-acc69618f634",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an API Endpoint Generator.\n\nThe user provides the following information:\n\nProject Title: {{ $json['Project name'] }}\n\nProject Description: {{ $json['Project description'] }}\n\nUsing this information, generate all the necessary REST API endpoints required for the project.\n\nEach endpoint must be described in valid JSON format, following the structure below:\n\n{\n  \"endpoint\": \"/api/v1/login\",\n  \"method\": \"POST\",\n  \"input\": {\n    \"username\": \"string\",\n    \"password\": \"string\"\n  },\n  \"response\": {\n    \"token\": \"string\"\n  }\n}\n\n**CRITICAL INSTRUCTION: Output ONLY the raw JSON array. Do not include any surrounding text, explanations, or markdown code fences (```json).**",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        208
+      ],
+      "id": "88849b34-ef69-4f57-b1f3-b7ce4c0e3b20",
+      "name": "Endpoints generator"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        704,
+        1232
+      ],
+      "id": "484aa5d0-c0ce-4616-9ada-fe35eed73ad7",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Node.js and Express backend developer. I am building a backend project with the following details:\n\nProject Name: {{ $json.project_name }}\nProject Description: {{ $json.project_description }}\n\nThe API endpoints are as follows:\n{{ $json.endpoints }}\n\nRequirements:\n1. Generate a complete folder structure for an Express backend project following best practices.\n2. Include separate folders for:\n   - src\n       - config\n       - controllers\n       - middleware\n       - models\n       - routes\n       - services\n       - utils (optional)\n   - node_modules\n   - public (optional)\n3. Include main files in the root such as:\n   - server.js\n   - app.js\n   - package.json\n   - .env\n   - .gitignore\n4. Include **one file per endpoint** in the routes and controllers folders if applicable.\n5. **Do NOT include file contents**. Only include file names as keys with empty object `{}` values.\n6. Output the folder structure in **nested JSON**, where:\n   - The project name is the root key\n   - Folders are objects containing subfolders/files\n   - Files are keys with empty objects `{}`\n\nCRITICAL INSTRUCTION: Output **ONLY the raw JSON object**. Do not include any surrounding text, explanations, or markdown code fences.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        704,
+        1008
+      ],
+      "id": "32724601-3029-46bf-9829-b696885e961c",
+      "name": "Backend folder structure generator"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the first item’s 'output' field\nconst input = $json.output;\n\n// Remove the markdown code block formatting (```json ... ```)\nconst cleaned = input\n  .replace(/```json\\n?/, '')\n  .replace(/```/, '')\n  .trim();\n\n// Parse the cleaned string into a JSON object\nconst parsed = JSON.parse(cleaned);\n\n// Return the parsed JSON so the next node can use it\nreturn [{ json: parsed }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1040,
+        1008
+      ],
+      "id": "1f131403-713b-47eb-b590-ae44f48e17f2",
+      "name": "Json converter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fetch raw output (works whether inside array or object)\nconst raw = items?.[0]?.json?.output || items?.[0]?.json?.response || JSON.stringify(items[0].json);\n\n// --- Utility: recursively unescape multiple layers ---\nfunction unescapeDeep(str) {\n  let prev;\n  let text = str;\n  let attempts = 0;\n\n  while (attempts < 8 && text !== prev) {\n    prev = text;\n    text = text\n      .replace(/^```json|```$/g, '')       // remove code fences\n      .replace(/\\\\r\\\\n|\\\\n/g, '\\n')        // newline escape\n      .replace(/\\\\t/g, '\\t')               // tab escape\n      .replace(/\\\\\"/g, '\"')                // quote escape\n      .replace(/\\\\\\\\/g, '\\\\');             // double backslashes\n    attempts++;\n  }\n  return text.trim();\n}\n\n// --- Utility: find the largest JSON-like object in a text ---\nfunction extractJSONBlock(text) {\n  const start = text.indexOf('{');\n  const end = text.lastIndexOf('}');\n  if (start === -1 || end === -1) {\n    throw new Error(\"No JSON braces found in output\");\n  }\n  return text.slice(start, end + 1);\n}\n\n// --- Recursive parser that keeps trying deeper levels ---\nfunction deepParse(input) {\n  if (typeof input !== 'string') return input;\n\n  let text = unescapeDeep(input);\n  for (let i = 0; i < 8; i++) {\n    try {\n      return JSON.parse(text);\n    } catch (err) {\n      // Extract inner JSON if extra characters remain\n      try {\n        const inner = extractJSONBlock(text);\n        text = unescapeDeep(inner);\n      } catch {\n        // No more braces to extract\n      }\n    }\n  }\n  throw new Error(\"Failed to parse final JSON after multiple cleanup passes\");\n}\n\n// --- Step 1: Convert any wrapped object like [{output:\"...\"}] ---\nlet candidate = raw;\nif (Array.isArray(candidate) && candidate[0]?.output) {\n  candidate = candidate[0].output;\n} else if (typeof candidate === 'object') {\n  candidate = JSON.stringify(candidate);\n}\n\n// --- Step 2: Clean deeply ---\nconst parsed = deepParse(candidate);\n\n// --- Step 3: Output cleaned JSON for next node ---\nreturn [{ json: { cleaned_folder_json: parsed } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        208
+      ],
+      "id": "9ede362b-fb6e-41a7-bf65-8048c522b4d4",
+      "name": "Json converter1"
+    },
+    {
+      "parameters": {
+        "content": "## Frontend\nGenerating frontend structure",
+        "height": 640,
+        "width": 2464
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -144,
+        1616
+      ],
+      "typeVersion": 1,
+      "id": "e03d634d-a4ee-4bce-bbf9-d677f1c65ea7",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the first item (adjust if multiple items)\nconst item = items[0].json;\n\n// Parse the endpoints JSON string into real JSON\nlet endpoints;\ntry {\n  if(item[\"endpoints json\"] != \"\"){\n    endpoints = JSON.parse(item[\"endpoints json\"]);\n  }\n    \n} catch (err) {\n    throw new Error(\"Failed to parse endpoints JSON: \" + err.message);\n}\n\n// Return the project info along with parsed endpoints\nreturn [{\n    json: {\n        project_name: item[\"project name\"],\n        project_description: item[\"project decription\"],\n        endpoints: endpoints,\n        submittedAt: item.submittedAt,\n        formMode: item.formMode\n    }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        192,
+        1776
+      ],
+      "id": "761ee407-08c2-480e-9439-d095b8feffae",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        448,
+        1952
+      ],
+      "id": "97db241b-b821-41e5-8ab1-a1530561e030",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1248,
+        1200
+      ],
+      "id": "908cf4ac-83ee-473e-b534-d71d58dc6101",
+      "name": "Google Gemini Chat Model3",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=node -e \"\nconst fs = require('fs');\nconst archiver = require('archiver');\n\n// Parse JSON from argument\nconst projectJson = JSON.parse(process.argv[1]);\n\nconst output = fs.createWriteStream('project.zip');\nconst archive = archiver('zip', { zlib: { level: 9 } });\narchive.pipe(output);\n\nconst addFiles = (obj, basePath='') => {\n  for (const key in obj) {\n    const val = obj[key];\n    const path = basePath ? basePath + '/' + key : key;\n    if (typeof val === 'string') {\n      archive.append(val, { name: path });\n    } else if (typeof val === 'object') {\n      addFiles(val, path);\n    }\n  }\n};\n\naddFiles(projectJson);\narchive.finalize();\n\" \"{{ $json[\"projectJson\"] }}\"\n"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        192
+      ],
+      "id": "167232a9-7212-4368-b531-563f6ce5b596",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The JSON you get from the previous node\nconst projectJson = $input.first().json[\"package.json\"] ; // or $json['yourProperty'] if nested\n\n// Convert to string\nconst jsonString = JSON.stringify(projectJson, null, 2);\n\n// Return as binary for n8n\nreturn [\n  {\n    json: {},\n    binary: {\n      data: {\n        data: Buffer.from(jsonString, 'utf8').toString('base64'),\n        mimeType: 'application/json',\n        fileName: 'project.json'\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        320
+      ],
+      "id": "e8a37231-bbeb-44eb-83c4-476115a7e7ac",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "operation": "compress",
+        "fileName": "={{ $binary.data.fileName }}"
+      },
+      "type": "n8n-nodes-base.compression",
+      "typeVersion": 1.1,
+      "position": [
+        2400,
+        320
+      ],
+      "id": "99cdee97-1339-42ff-a8a8-20e6e51eec17",
+      "name": "Compression"
+    },
+    {
+      "parameters": {
+        "height": 576,
+        "width": 944
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1712,
+        96
+      ],
+      "typeVersion": 1,
+      "id": "248253f4-83fb-4ab1-9891-a2882489e084",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the first item (adjust if multiple items)\nconst item = items[0].json;\n\n// Parse the endpoints JSON string into real JSON\nlet endpoints;\ntry {\n    endpoints = JSON.parse(item[\"endpoints json\"]);\n} catch (err) {\n    throw new Error(\"Failed to parse endpoints JSON: \" + err.message);\n}\n\n// Return the project info along with parsed endpoints\nreturn [{\n    json: {\n        project_name: item[\"project name\"],\n        project_description: item[\"project decription\"],\n        endpoints: endpoints,\n        submittedAt: item.submittedAt,\n        formMode: item.formMode\n    }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        1008
+      ],
+      "id": "d43da0e2-da9f-4136-a1fb-be8750800b36",
+      "name": "Endpoints Json formatter"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\nimport zipfile\nimport io\nimport base64\n\n# === INPUT ===\n# Get JSON from previous node\nproject = _input.first().json\n\nprojectName = _('backend info').first().json[\"project name\"]\n\n# === Function to recursively add files ===\ndef add_files(zipf, obj, base=\"\"):\n    for name, val in obj.items():\n        path = f\"{base}/{name}\" if base else name\n        if isinstance(val, str):\n            zipf.writestr(path, val)\n        elif isinstance(val, dict):\n            add_files(zipf, val, path)\n\n# === Create zip in memory ===\nzip_buffer = io.BytesIO()\nwith zipfile.ZipFile(zip_buffer, \"w\", zipfile.ZIP_DEFLATED) as zipf:\n    add_files(zipf, project)\n\nzip_buffer.seek(0)\n\n# === Convert zip to Base64 ===\nzip_base64 = base64.b64encode(zip_buffer.read()).decode(\"utf-8\")\n\n# === Return output in n8n format ===\nreturn [\n    {\n        \"json\": {\n            \"fileName\": f\"{projectName}(BE).zip\"\n        },\n        \"binary\": {\n            \"data\": {\n                \"data\": zip_base64,\n                \"mimeType\": \"application/zip\",\n                \"fileName\": f\"{projectName}(BE).zip\"\n            }\n        }\n    }\n]\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        1008
+      ],
+      "id": "0f68722c-5212-487f-a186-d057a88e07d5",
+      "name": "Backend project zip converter"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        1984
+      ],
+      "id": "3f95f273-2135-4634-a7f6-de0aab641a8a",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "iDmRdqJ0ihSwMnXn",
+          "name": "Bharath003"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\nimport zipfile\nimport io\nimport base64\n\n# === INPUT ===\nproject = _input.item[\"json\"]  # the entire folder structure JSON\nproject_name = _('frontend info').first().json[\"project name\"]\n\n# If root key is the project name (e.g. {\"my-react-app\": {...}}), unwrap it\nif len(project.keys()) == 1 and isinstance(next(iter(project.values())), dict):\n    project_root = next(iter(project.values()))\nelse:\n    project_root = project\n\n# === Function to recursively add files ===\ndef add_files(zipf, obj, base=\"\"):\n    for name, val in obj.items():\n        path = f\"{base}/{name}\" if base else name\n\n        if isinstance(val, str):\n            # normal text file\n            zipf.writestr(path, val)\n\n        elif isinstance(val, dict):\n            # case 1: dictionary that looks like a file (e.g., package.json)\n            if any(isinstance(v, (str, int, float, bool, list, dict)) for v in val.values()):\n                try:\n                    content = json.dumps(val, indent=2)\n                    zipf.writestr(path, content)\n                except Exception:\n                    add_files(zipf, val, path)\n            else:\n                # folder\n                add_files(zipf, val, path)\n\n        else:\n            # fallback — convert other data types to string\n            zipf.writestr(path, str(val))\n\n# === Create zip in memory ===\nzip_buffer = io.BytesIO()\nwith zipfile.ZipFile(zip_buffer, \"w\", zipfile.ZIP_DEFLATED) as zipf:\n    add_files(zipf, project_root)\n\nzip_buffer.seek(0)\n\n# === Convert zip to Base64 ===\nzip_base64 = base64.b64encode(zip_buffer.read()).decode(\"utf-8\")\n\n# === Return output for n8n ===\nreturn [\n    {\n        \"json\": {\n            \"fileName\": f\"{project_name}.zip\"\n        },\n        \"binary\": {\n            \"data\": {\n                \"data\": zip_base64,\n                \"mimeType\": \"application/zip\",\n                \"fileName\": f\"{project_name}.zip\"\n            }\n        }\n    }\n]\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2016,
+        1744
+      ],
+      "id": "7720ff4c-bb83-4f0b-8c09-3be124499319",
+      "name": "Backend project zip converter1"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert Node.js and Express backend developer. \n\nI will provide:\n1. A JSON object that defines the folder and file structure of an Express backend project.\n2. A list of API endpoints with methods, inputs, and responses.\n\nYour task:\n- Generate the code for each file **independently** based on its purpose (controllers, routes, models, services, etc.).\n- Do not create a `node_modules` folder or include any package code.\n- Use modern JavaScript (ES6+), async/await, and modular Express architecture.\n- Each file should contain only relevant code for its purpose.\n- Output a **JSON object** where:\n  - Keys are **file paths** (relative to project root, e.g., `\"src/controllers/auth.controller.js\"`)\n  - Values are **strings containing the complete code** of that file.\n\nGuidelines:\n1. `routes/` → define Express routes linked to controllers.\n2. `controllers/` → handle HTTP requests, call services, return responses.\n3. `services/` → core business logic.\n4. `models/` → Mongoose schemas for MongoDB.\n5. `middleware/` → reusable middlewares (auth, validation, error handling).\n6. `config/` → environment and database configuration.\n7. `utils/` → helper functions like error handling, JWT utilities, logger.\n\n**Use the following folder structure (ignore node_modules):**\n\nThis is my project folder structure\n{{ $json.JalJira }}\n\nreference structure : \n[\n  {\n    \"JalJira\": {\n      \".env\": {},\n      \".gitignore\": {},\n      \"package.json\": {},\n      \"app.js\": {},\n      \"server.js\": {},\n      \"node_modules\": {},\n      \"public\": {},\n      \"src\": {\n        \"config\": {\n          \"database.js\": {},\n          \"jwt.js\": {},\n          \"cors.js\": {},\n          \"appSettings.js\": {}\n        },\n        \"controllers\": {\n          \"auth\": {\n            \"registerUser.js\": {},\n            \"loginUser.js\": {},\n            \"refreshToken.js\": {}\n          },\n          \"users\": {\n            \"getAllUsers.js\": {},\n            \"getUserById.js\": {},\n            \"updateUserProfile.js\": {},\n            \"deleteUser.js\": {},\n            \"assignUserRole.js\": {},\n            \"getProjectMembers.js\": {}\n          },\n          \"projects\": {\n            \"createProject.js\": {},\n            \"getProjects.js\": {},\n            \"getProjectById.js\": {},\n            \"updateProject.js\": {},\n            \"deleteProject.js\": {},\n            \"addProjectMember.js\": {},\n            \"removeProjectMember.js\": {}\n          },\n          \"issues\": {\n            \"createIssue.js\": {},\n            \"getIssues.js\": {},\n            \"getIssueById.js\": {},\n            \"updateIssue.js\": {},\n            \"deleteIssue.js\": {},\n            \"assignIssue.js\": {},\n            \"transitionIssueStatus.js\": {},\n            \"searchIssues.js\": {},\n            \"getIssueHistory.js\": {},\n            \"addWatcherToIssue.js\": {},\n            \"removeWatcherFromIssue.js\": {}\n          },\n          \"comments\": {\n            \"addCommentToIssue.js\": {},\n            \"getIssueComments.js\": {},\n            \"updateComment.js\": {},\n            \"deleteComment.js\": {}\n          },\n          \"attachments\": {\n            \"uploadAttachment.js\": {},\n            \"deleteAttachment.js\": {}\n          },\n          \"boards\": {\n            \"createBoard.js\": {},\n            \"getBoards.js\": {},\n            \"getBoardById.js\": {},\n            \"updateBoard.js\": {},\n            \"deleteBoard.js\": {},\n            \"moveIssueOnBoard.js\": {}\n          },\n          \"sprints\": {\n            \"createSprint.js\": {},\n            \"getSprints.js\": {},\n            \"getSprintById.js\": {},\n            \"updateSprint.js\": {},\n            \"deleteSprint.js\": {},\n            \"startSprint.js\": {},\n            \"completeSprint.js\": {}\n          },\n          \"workflows\": {\n            \"createWorkflow.js\": {},\n            \"getWorkflows.js\": {},\n            \"getWorkflowById.js\": {},\n            \"updateWorkflow.js\": {},\n            \"deleteWorkflow.js\": {},\n            \"updateWorkflowStatuses.js\": {},\n            \"updateWorkflowTransitions.js\": {}\n          },\n          \"filters\": {\n            \"createFilter.js\": {},\n            \"getFilters.js\": {},\n            \"getFilterById.js\": {},\n            \"updateFilter.js\": {},\n            \"deleteFilter.js\": {}\n          },\n          \"notifications\": {\n            \"getNotifications.js\": {},\n            \"markNotificationRead.js\": {}\n          },\n          \"activityLogs\": {\n            \"getProjectActivityLog.js\": {},\n            \"getIssueActivityLog.js\": {}\n          },\n          \"integrations\": {\n            \"createWebhook.js\": {},\n            \"getWebhooks.js\": {},\n            \"getWebhookById.js\": {},\n            \"updateWebhook.js\": {},\n            \"deleteWebhook.js\": {},\n            \"generateApiToken.js\": {}\n          },\n          \"reports\": {\n            \"getBurndownChart.js\": {},\n            \"getVelocityReport.js\": {},\n            \"getSprintSummary.js\": {}\n          },\n          \"dashboards\": {\n            \"createDashboard.js\": {},\n            \"getDashboards.js\": {},\n            \"getDashboardById.js\": {},\n            \"updateDashboard.js\": {},\n            \"deleteDashboard.js\": {},\n            \"addWidgetToDashboard.js\": {},\n            \"updateDashboardWidget.js\": {},\n            \"deleteDashboardWidget.js\": {}\n          }\n        },\n        \"middleware\": {\n          \"errorHandler.js\": {},\n          \"authMiddleware.js\": {},\n          \"permissionMiddleware.js\": {},\n          \"validationMiddleware.js\": {},\n          \"loggerMiddleware.js\": {}\n        },\n        \"models\": {\n          \"User.js\": {},\n          \"Project.js\": {},\n          \"Issue.js\": {},\n          \"Sprint.js\": {},\n          \"Board.js\": {},\n          \"Comment.js\": {},\n          \"Workflow.js\": {},\n          \"Attachment.js\": {},\n          \"Notification.js\": {},\n          \"ActivityLog.js\": {},\n          \"Filter.js\": {},\n          \"Webhook.js\": {},\n          \"Dashboard.js\": {}\n        },\n        \"routes\": {\n          \"auth\": {\n            \"registerUserRoute.js\": {},\n            \"loginUserRoute.js\": {},\n            \"refreshTokenRoute.js\": {}\n          },\n          \"users\": {\n            \"getAllUsersRoute.js\": {},\n            \"getUserByIdRoute.js\": {},\n            \"updateUserProfileRoute.js\": {},\n            \"deleteUserRoute.js\": {},\n            \"assignUserRoleRoute.js\": {},\n            \"getProjectMembersRoute.js\": {}\n          },\n          \"projects\": {\n            \"createProjectRoute.js\": {},\n            \"getProjectsRoute.js\": {},\n            \"getProjectByIdRoute.js\": {},\n            \"updateProjectRoute.js\": {},\n            \"deleteProjectRoute.js\": {},\n            \"addProjectMemberRoute.js\": {},\n            \"removeProjectMemberRoute.js\": {}\n          },\n          \"issues\": {\n            \"createIssueRoute.js\": {},\n            \"getIssuesRoute.js\": {},\n            \"getIssueByIdRoute.js\": {},\n            \"updateIssueRoute.js\": {},\n            \"deleteIssueRoute.js\": {},\n            \"assignIssueRoute.js\": {},\n            \"transitionIssueStatusRoute.js\": {},\n            \"searchIssuesRoute.js\": {},\n            \"getIssueHistoryRoute.js\": {},\n            \"addWatcherToIssueRoute.js\": {},\n            \"removeWatcherFromIssueRoute.js\": {}\n          },\n          \"comments\": {\n            \"addCommentToIssueRoute.js\": {},\n            \"getIssueCommentsRoute.js\": {},\n            \"updateCommentRoute.js\": {},\n            \"deleteCommentRoute.js\": {}\n          },\n          \"attachments\": {\n            \"uploadAttachmentRoute.js\": {},\n            \"deleteAttachmentRoute.js\": {}\n          },\n          \"boards\": {\n            \"createBoardRoute.js\": {},\n            \"getBoardsRoute.js\": {},\n            \"getBoardByIdRoute.js\": {},\n            \"updateBoardRoute.js\": {},\n            \"deleteBoardRoute.js\": {},\n            \"moveIssueOnBoardRoute.js\": {}\n          },\n          \"sprints\": {\n            \"createSprintRoute.js\": {},\n            \"getSprintsRoute.js\": {},\n            \"getSprintByIdRoute.js\": {},\n            \"updateSprintRoute.js\": {},\n            \"deleteSprintRoute.js\": {},\n            \"startSprintRoute.js\": {},\n            \"completeSprintRoute.js\": {}\n          },\n          \"workflows\": {\n            \"createWorkflowRoute.js\": {},\n            \"getWorkflowsRoute.js\": {},\n            \"getWorkflowByIdRoute.js\": {},\n            \"updateWorkflowRoute.js\": {},\n            \"deleteWorkflowRoute.js\": {},\n            \"updateWorkflowStatusesRoute.js\": {},\n            \"updateWorkflowTransitionsRoute.js\": {}\n          },\n          \"filters\": {\n            \"createFilterRoute.js\": {},\n            \"getFiltersRoute.js\": {},\n            \"getFilterByIdRoute.js\": {},\n            \"updateFilterRoute.js\": {},\n            \"deleteFilterRoute.js\": {}\n          },\n          \"notifications\": {\n            \"getNotificationsRoute.js\": {},\n            \"markNotificationReadRoute.js\": {}\n          },\n          \"activityLogs\": {\n            \"getProjectActivityLogRoute.js\": {},\n            \"getIssueActivityLogRoute.js\": {}\n          },\n          \"integrations\": {\n            \"createWebhookRoute.js\": {},\n            \"getWebhooksRoute.js\": {},\n            \"getWebhookByIdRoute.js\": {},\n            \"updateWebhookRoute.js\": {},\n            \"deleteWebhookRoute.js\": {},\n            \"generateApiTokenRoute.js\": {}\n          },\n          \"reports\": {\n            \"getBurndownChartRoute.js\": {},\n            \"getVelocityReportRoute.js\": {},\n            \"getSprintSummaryRoute.js\": {}\n          },\n          \"dashboards\": {\n            \"createDashboardRoute.js\": {},\n            \"getDashboardsRoute.js\": {},\n            \"getDashboardByIdRoute.js\": {},\n            \"updateDashboardRoute.js\": {},\n            \"deleteDashboardRoute.js\": {},\n            \"addWidgetToDashboardRoute.js\": {},\n            \"updateDashboardWidgetRoute.js\": {},\n            \"deleteDashboardWidgetRoute.js\": {}\n          }\n        },\n        \"services\": {\n          \"userService.js\": {},\n          \"projectService.js\": {},\n          \"issueService.js\": {},\n          \"commentService.js\": {},\n          \"boardService.js\": {},\n          \"sprintService.js\": {},\n          \"workflowService.js\": {},\n          \"notificationService.js\": {},\n          \"activityLogService.js\": {},\n          \"integrationService.js\": {},\n          \"reportService.js\": {},\n          \"filterService.js\": {},\n          \"dashboardService.js\": {},\n          \"authService.js\": {}\n        },\n        \"utils\": {\n          \"apiFeatures.js\": {},\n          \"appError.js\": {},\n          \"catchAsync.js\": {},\n          \"email.js\": {},\n          \"validationSchemas.js\": {},\n          \"logger.js\": {}\n        }\n      }\n    }\n  }\n]\n\n\nCRITICAL INSTRUCTION:\n- Output **only a JSON object**.\n- Do not include markdown code fences, explanations, or extra text.\n- Each key is a file path and its value is the file code string.\n\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1248,
+        1008
+      ],
+      "id": "05a4248e-018c-42d2-aa31-af489c4080b6",
+      "name": "Entire BE with code generator"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert frontend developer skilled in React, Vite, and modern UI architecture.\nI am building a React frontend project with the following details:\n\nProject Name: {{ $json.project_name }}\nProject Description: {{ $json.project_description }}\n\nThe frontend components/pages are based on the following details or API endpoints (for guidance):\n{{ $json.endpoints }}\n\nRequirements:\n\nGenerate a complete folder structure for a scalable React project following best practices.\n\nThe structure should include:\n\nsrc/ folder containing:\n\ncomponents/ — reusable UI components\n\npages/ — page-level components for routing\n\nlayouts/ — shared layout components (e.g., Navbar, Sidebar, Footer)\n\nhooks/ — custom React hooks\n\ncontext/ — React context providers for global state\n\nservices/ — API call handlers or integration logic\n\nutils/ — helper functions\n\nassets/ — images, icons, and styles (CSS or Tailwind setup)\n\npublic/ folder for static assets\n\nRoot-level files such as:\n\npackage.json\n\nvite.config.js\n\nindex.html\n\n.env\n\n.gitignore\n\nREADME.md\n\nInclude one file per page in the pages/ folder if applicable.\n\nDo NOT include file contents — only include file names as keys with empty {} values.\n\nOutput the folder structure in nested JSON, where:\n\nThe project name is the root key\n\nFolders are objects containing subfolders/files\n\nFiles are keys with empty objects {}\n\nCRITICAL INSTRUCTION: Output ONLY the raw JSON object — no text, explanation, or markdown code fences.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        448,
+        1760
+      ],
+      "id": "cde11a31-28b4-464f-a376-291a23badfa1",
+      "name": "Frontend folder structure generator"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the first item’s 'output' field\nconst input = $json.output;\n\n// Remove the markdown code block formatting (```json ... ```)\nconst cleaned = input\n  .replace(/```json\\n?/, '')\n  .replace(/```/, '')\n  .trim();\n\n// Parse the cleaned string into a JSON object\nconst parsed = JSON.parse(cleaned);\n\n// Return the parsed JSON so the next node can use it\nreturn [{ json: parsed }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        864,
+        1760
+      ],
+      "id": "8d76405b-874b-4312-9e8e-fca0a52fcd19",
+      "name": "json parser"
+    },
+    {
+      "parameters": {
+        "formTitle": "project Info",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "project name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "project decription",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "endpoints json",
+              "fieldType": "textarea",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        48,
+        1008
+      ],
+      "id": "faa10bc9-5efa-41cc-b357-939f46d58574",
+      "name": "backend info",
+      "webhookId": "c08f02ec-63e8-48d6-9704-39eb12fb1f9f"
+    },
+    {
+      "parameters": {
+        "formTitle": "project Info",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "project name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "project decription",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "endpoints json",
+              "fieldType": "textarea"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -16,
+        1776
+      ],
+      "id": "8ef7afcf-eda1-4f21-a72c-53daec94ed9b",
+      "name": "frontend info",
+      "webhookId": "16a8211e-4208-4794-8fb0-6d51c755fb90"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an expert React frontend developer skilled in React, Vite, modern JavaScript (ES6+), and component-based architecture.\n\nI will provide:\n\nA JSON object that defines the folder and file structure of a React project.\n\nA list of features, components, and API endpoints used by the app.\n\nYour task:\n\nGenerate code for each file independently based on its purpose (components, pages, hooks, context, services, etc.).\n\nDo not include build artifacts like node_modules or dist.\n\nUse functional components, React Hooks, and clean, modular code.\n\nApply Tailwind CSS for styling (if applicable).\n\nUse React Router for navigation.\n\nInclude comments only where necessary for clarity.\n\nOutput a JSON object where:\n\nKeys are file paths (relative to project root, e.g., \"src/components/Navbar.jsx\")\n\nValues are strings containing the complete code for that file.\n\nGuidelines:\n\ncomponents/ → reusable UI components (buttons, inputs, navbars, etc.)\n\npages/ → page-level components, handle layout and page-specific logic\n\nlayouts/ → shared layouts like Navbar, Footer, Sidebar\n\nhooks/ → custom React hooks for reusable logic (e.g., useFetch, useAuth)\n\ncontext/ → React Context for global state management\n\nservices/ → API calls using Axios or Fetch\n\nutils/ → helper functions and constants\n\nassets/ → images, icons, CSS, or Tailwind setup\n\nindex.html, main.jsx, App.jsx, and vite.config.js → must include proper imports and setup\n\nalso include package.json\n\nJSON object defining the folder and file structure, and the list of features, components, and API endpoint : \n{{ $json.JalJira }}\n\nExample reference folder structure:\n[\n  {\n    \"JalJira\": {\n      \"public\": {\n        \"vite.svg\": {},\n        \"favicon.ico\": {}\n      },\n      \"src\": {\n        \"assets\": {\n          \"styles\": {\n            \"index.css\": {},\n            \"tailwind.css\": {}\n          },\n          \"images\": {},\n          \"icons\": {}\n        },\n        \"components\": {\n          \"common\": {\n            \"Button.jsx\": {},\n            \"Input.jsx\": {},\n            \"Modal.jsx\": {},\n            \"LoadingSpinner.jsx\": {}\n          },\n          \"project\": {\n            \"ProjectCard.jsx\": {},\n            \"ProjectForm.jsx\": {}\n          },\n          \"issue\": {\n            \"IssueCard.jsx\": {},\n            \"IssueDetailModal.jsx\": {},\n            \"IssueForm.jsx\": {},\n            \"IssueComment.jsx\": {}\n          },\n          \"board\": {\n            \"BoardColumn.jsx\": {},\n            \"BoardSwimlane.jsx\": {},\n            \"SprintHeader.jsx\": {}\n          },\n          \"layout\": {\n            \"Navbar.jsx\": {},\n            \"Sidebar.jsx\": {},\n            \"Footer.jsx\": {},\n            \"AuthLayout.jsx\": {},\n            \"AppLayout.jsx\": {}\n          }\n        },\n        \"context\": {\n          \"AuthContext.jsx\": {},\n          \"ProjectContext.jsx\": {},\n          \"NotificationContext.jsx\": {}\n        },\n        \"hooks\": {\n          \"useAuth.jsx\": {},\n          \"useProjects.jsx\": {},\n          \"useIssues.jsx\": {},\n          \"useDebounce.jsx\": {}\n        },\n        \"layouts\": {\n          \"MainLayout.jsx\": {},\n          \"DashboardLayout.jsx\": {}\n        },\n        \"pages\": {\n          \"LoginPage.jsx\": {},\n          \"RegisterPage.jsx\": {},\n          \"DashboardPage.jsx\": {},\n          \"ProjectListPage.jsx\": {},\n          \"ProjectDetailPage.jsx\": {},\n          \"IssueBoardPage.jsx\": {},\n          \"IssueDetailPage.jsx\": {},\n          \"UserManagementPage.jsx\": {},\n          \"SettingsPage.jsx\": {},\n          \"ReportsPage.jsx\": {},\n          \"NotFoundPage.jsx\": {}\n        },\n        \"services\": {\n          \"authService.js\": {},\n          \"projectService.js\": {},\n          \"issueService.js\": {},\n          \"userService.js\": {},\n          \"apiClient.js\": {}\n        },\n        \"utils\": {\n          \"helpers.js\": {},\n          \"constants.js\": {},\n          \"validators.js\": {},\n          \"dateFormatters.js\": {}\n        },\n        \"App.jsx\": {},\n        \"main.jsx\": {}\n      },\n      \".env\": {},\n      \".gitignore\": {},\n      \"index.html\": {},\n      \"package.json\": {},\n      \"README.md\": {},\n      \"tailwind.config.js\": {},\n      \"postcss.config.js\": {},\n      \"vite.config.js\": {}\n    }\n  }\n]\n\n\nCRITICAL INSTRUCTION:\n- Output **only a JSON object**.\n- Do not include markdown code fences, explanations, or extra text.\n- Each key is a file path and its value is the file code string.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1184,
+        1760
+      ],
+      "id": "e6dcbc36-1aee-4aec-932c-5abce4cdf080",
+      "name": "Entire FE with code generator"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Helper function to check if a string is valid JSON\nfunction isJsonString(str) {\n  try {\n    JSON.parse(str);\n    return true;\n  } catch {\n    return false;\n  }\n}\n\n// Get input JSON\nconst input = $input.first().json;\n\n// Clone it to avoid modifying directly\nconst output = { ...input };\n\n// Process only \"package.json\"\nif (output[\"package.json\"]) {\n  const pkg = output[\"package.json\"];\n\n  // Case 1: It's an object → stringify and escape it\n  if (typeof pkg === \"object\") {\n    const pkgString = JSON.stringify(pkg, null, 2).replace(/\"/g, '\\\\\"');\n    output[\"package.json\"] = `\"${pkgString}\"`;\n\n  // Case 2: It's a string → check if it's already valid JSON\n  } else if (typeof pkg === \"string\") {\n    if (isJsonString(pkg)) {\n      // Already valid JSON string, leave it untouched\n      output[\"package.json\"] = pkg;\n    } else {\n      // Not valid JSON string, leave as-is\n      output[\"package.json\"] = pkg;\n    }\n  }\n}\n\n// Return the full updated JSON\nreturn [{ json: output }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1872,
+        1008
+      ],
+      "id": "57d4accb-58fa-44b7-bb07-eefd43f1c115",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the input data from the previous node\nconst input = $input.item.json.output;\n\n// Step 1: Remove the ```json wrapping if present\nlet cleanedInput = input.replace(/^```json\\s*/, '').replace(/\\s*```$/, '');\n\n// Step 2: Parse the JSON string\nlet parsed;\ntry {\n  parsed = JSON.parse(cleanedInput);\n} catch (err) {\n  throw new Error(`Failed to parse JSON: ${err.message}`);\n}\n\n// Step 3: Convert package.json string into real object\nif (parsed[\"package.json\"]) {\n  try {\n    parsed[\"package.json\"] = JSON.parse(parsed[\"package.json\"]);\n  } catch (err) {\n    throw new Error(`Failed to parse package.json: ${err.message}`);\n  }\n}\n\n// Step 4: Return as n8n output\nreturn [{ json: parsed }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        1008
+      ],
+      "id": "c95a1287-fea4-41e2-8be7-445be4f05a3d",
+      "name": "js - Project structure Json formatter using js"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\nimport re\n\nraw_content = _input.first().json.get(\"output\", \"\")\n\n# Extract JSON from ```json ... ``` block\njson_match = re.search(r\"```json\\s*(\\{.*\\})\\s*```\", raw_content, re.DOTALL)\nif json_match:\n    json_str = json_match.group(1)\nelse:\n    json_str = raw_content.strip()\n\n# --- Clean and attempt to auto-repair ---\n# Fix invalid escape sequences\njson_str = re.sub(r'\\\\(?![\"\\\\/bfnrtu])', r'\\\\\\\\', json_str)\n\n# Try to balance braces/brackets if truncated\nopen_braces = json_str.count('{')\nclose_braces = json_str.count('}')\nif open_braces > close_braces:\n    json_str += '}' * (open_braces - close_braces)\nopen_brackets = json_str.count('[')\nclose_brackets = json_str.count(']')\nif open_brackets > close_brackets:\n    json_str += ']' * (open_brackets - close_brackets)\n\n# --- Parse safely ---\nparsed_json = None\ntry:\n    parsed_json = json.loads(json_str)\nexcept Exception:\n    # If still not valid JSON, try forgiving parse\n    try:\n        import ast\n        parsed_json = ast.literal_eval(json_str)\n    except Exception as e:\n        # Return cleaned raw JSON so flow continues\n        return [{\"json\": {\"error\": str(e), \"raw\": json_str[:1000]}}]\n\n# --- Return n8n-compatible output ---\nif isinstance(parsed_json, dict):\n    items = [{\"json\": parsed_json}]\nelif isinstance(parsed_json, list):\n    items = [{\"json\": obj} for obj in parsed_json]\nelse:\n    items = [{\"json\": {\"data\": parsed_json}}]\n\nreturn items\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1616,
+        1216
+      ],
+      "id": "8ae97f43-9cd6-4a60-9e17-bd0906c4f5d1",
+      "name": "py - Project structure Json formatter using py"
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "import json\nimport re\n\nraw_content = _input.first().json.get(\"output\", \"\")\n\n# Extract JSON from ```json ... ``` block\njson_match = re.search(r\"```json\\s*(\\{.*\\})\\s*```\", raw_content, re.DOTALL)\nif json_match:\n    json_str = json_match.group(1)\nelse:\n    json_str = raw_content.strip()\n\n# --- Clean and attempt to auto-repair ---\n# Fix invalid escape sequences\njson_str = re.sub(r'\\\\(?![\"\\\\/bfnrtu])', r'\\\\\\\\', json_str)\n\n# Try to balance braces/brackets if truncated\nopen_braces = json_str.count('{')\nclose_braces = json_str.count('}')\nif open_braces > close_braces:\n    json_str += '}' * (open_braces - close_braces)\nopen_brackets = json_str.count('[')\nclose_brackets = json_str.count(']')\nif open_brackets > close_brackets:\n    json_str += ']' * (open_brackets - close_brackets)\n\n# --- Parse safely ---\nparsed_json = None\ntry:\n    parsed_json = json.loads(json_str)\nexcept Exception:\n    # If still not valid JSON, try forgiving parse\n    try:\n        import ast\n        parsed_json = ast.literal_eval(json_str)\n    except Exception as e:\n        # Return cleaned raw JSON so flow continues\n        return [{\"json\": {\"error\": str(e), \"raw\": json_str[:1000]}}]\n\n# --- Return n8n-compatible output ---\nif isinstance(parsed_json, dict):\n    items = [{\"json\": parsed_json}]\nelif isinstance(parsed_json, list):\n    items = [{\"json\": obj} for obj in parsed_json]\nelse:\n    items = [{\"json\": {\"data\": parsed_json}}]\n\nreturn items\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1584,
+        1968
+      ],
+      "id": "4c89f2e1-dd5c-4832-a938-0a8a1693cc33",
+      "name": "py - Project structure Json formatter"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the input data from the previous node\nconst input = $input.item.json.output;\n\n// Step 1: Remove the ```json wrapping if present\nlet cleanedInput = input.replace(/^```json\\s*/, '').replace(/\\s*```$/, '');\n\n// Step 2: Parse the JSON string\nlet parsed;\ntry {\n  parsed = JSON.parse(cleanedInput);\n} catch (err) {\n  throw new Error(`Failed to parse JSON: ${err.message}`);\n}\n\n// Step 3: Convert package.json string into real object\nif (parsed[\"package.json\"]) {\n  try {\n    parsed[\"package.json\"] = JSON.parse(parsed[\"package.json\"]);\n  } catch (err) {\n    throw new Error(`Failed to parse package.json: ${err.message}`);\n  }\n}\n\n// Step 4: Return as n8n output\nreturn [{ json: parsed }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1568,
+        1760
+      ],
+      "id": "bba0cb03-4f65-47db-841f-7f4a19e18223",
+      "name": "js - Project structure Json formatter1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// === INPUT ===\nconst input = $json;\n\n// === Recursive flatten function (skips inside package.json) ===\nfunction flattenJSON(obj, basePath = \"\") {\n  let result = {};\n  for (const key in obj) {\n    const value = obj[key];\n    const newPath = basePath ? `${basePath}/${key}` : key;\n\n    if (key === \"package.json\") {\n      // ✅ Keep package.json as a single file, not flattened\n      if (typeof value === \"object\") {\n        result[newPath] = JSON.stringify(value, null, 2);\n      } else {\n        result[newPath] = value;\n      }\n      continue; // skip recursion into it\n    }\n\n    if (typeof value === \"object\" && value !== null && !Array.isArray(value)) {\n      Object.assign(result, flattenJSON(value, newPath));\n    } else {\n      result[newPath] = value;\n    }\n  }\n  return result;\n}\n\n// === Detect the top-level project folder (e.g., JalJira) ===\nconst projectFolder = Object.keys(input)[0];\nconst projectData = input[projectFolder];\n\n// === Flatten everything under that folder ===\nconst flattened = flattenJSON(projectData, projectFolder);\n\n// === OUTPUT ===\nreturn [\n  {\n    json: flattened\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        1632
+      ],
+      "id": "3b805b1f-42b1-4313-9613-2e4fd35365ed",
+      "name": "Code in JavaScript2"
+    }
+  ],
+  "connections": {
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Endpoints generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Endpoints generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endpoints generator": {
+      "main": [
+        [
+          {
+            "node": "Json converter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Backend folder structure generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Backend folder structure generator": {
+      "main": [
+        [
+          {
+            "node": "Json converter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Json converter": {
+      "main": [
+        [
+          {
+            "node": "Entire BE with code generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Frontend folder structure generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Frontend folder structure generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Entire BE with code generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "Compression",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endpoints Json formatter": {
+      "main": [
+        [
+          {
+            "node": "Backend folder structure generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Entire FE with code generator",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entire BE with code generator": {
+      "main": [
+        [
+          {
+            "node": "js - Project structure Json formatter using js",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "py - Project structure Json formatter using py",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Frontend folder structure generator": {
+      "main": [
+        [
+          {
+            "node": "json parser",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "json parser": {
+      "main": [
+        [
+          {
+            "node": "Entire FE with code generator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "backend info": {
+      "main": [
+        [
+          {
+            "node": "Endpoints Json formatter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "frontend info": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entire FE with code generator": {
+      "main": [
+        [
+          {
+            "node": "py - Project structure Json formatter",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "js - Project structure Json formatter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Backend project zip converter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "js - Project structure Json formatter using js": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "py - Project structure Json formatter using py": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "py - Project structure Json formatter": {
+      "main": [
+        [
+          {
+            "node": "Backend project zip converter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "js - Project structure Json formatter1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Backend project zip converter1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "6e05b075be8ef346bc5d56687c9a460aafa779f6b55bb4aecf0a10d3a98a7526"
+  }
+}
